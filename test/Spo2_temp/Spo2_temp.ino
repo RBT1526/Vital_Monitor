@@ -1,10 +1,10 @@
-//ARDUINO UNO CODE GET SPO2 AND BPM
+//ARDUINO UNO CODE GET SPO2,BPM and Temperature
 //
 //
 //
-//Gerardo Fregoso Jiménez Code based on the "j.n.magee max30102 tinypulseppg proyect"
+//Gerardo Fregoso Jiménez Code based on the "j.n.magee max30102 tinypulseppg proyect" and adafruit library
 //
-//Libraries used: j.n.magee max30102 library and Sparkfun drivers.
+//Libraries used: j.n.magee max30102 library and Sparkfun drivers, adafruit library for htu31
 //
 //
 //------------------------------------------------------------------------------
@@ -32,7 +32,7 @@ byte rates[RATE_SIZE]; //Array of heart rates
 byte rateSpot = 0; //to locate a rate on the array
 long lastBeat = 0; //Time at which the last beat occurred
 float beatsPerMinute = 0; //operation to get the bpm
-String datos = "bOsO"; //final data string
+String datos = "bOsO"; //final spo2 and bpm data string
 unsigned long tiempo = 0; //variable for time comparation
 String temperature = "tOf";//declare the temperature variable
 //------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ void setup() {
   }
   particleSensor.setup(); // max30102 setup
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  //starting the sensor
+  //starting the temperature sensor
   if (!htu.begin(0x40)) {//i2c communication begins
     Serial.println("Couldn't find sensor!");//if it dosen't find the sensor
     while (1);
@@ -62,23 +62,25 @@ void setup() {
 //MAIN LOOP
 void loop()  {
   GetOxi();//call the function to get the spo2 and bpm
-  GetTemp();
+  GetTemp();//call the function to get the temperature
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   //EVERY 500 MILISECONDS IT PRINTS THE DATA STRING
   if (millis() - tiempo > 500) { //simple millis comparation
     tiempo = millis();
-    Serial.println(datos+temperature);
+    Serial.println(datos+temperature);//combine the 2 strings
   }
   // NOTE= IT CAN'T BE USE A DELAY BECAUSE WE WANT TO RUN SIMULTANEUS
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 }
+//------------------------------------------------------------------------------
+//GET TEMPERATURE FUNCTION
 void GetTemp(){
   sensors_event_t humidity, temp;//Declare name for sensor event
   htu.getEvent(&humidity, &temp);// populate temp objects with fresh data
-temperature="t";
-temperature+=temp.temperature;//put the value in another variable
-temperature+="f";
+temperature="t";//put a t to identify when the value start
+temperature+=temp.temperature;//put the value in the string
+temperature+="f";// to finish the string
 
 }
 
@@ -162,3 +164,5 @@ void GetOxi() {
   }//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 }
+//------------------------------------------------------------------------------
+//Gerardo Fregoso Jiménez 2022
