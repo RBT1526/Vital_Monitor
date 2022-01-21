@@ -14,6 +14,8 @@
 #include "Pulse.h"
 #include "heartRate.h"
 #include "Adafruit_HTU31D.h"//adafruit library
+#include <SPI.h>
+#include <RH_NRF24.h>
 //------------------------------------------------------------------------------
 //Declare the libraries variable names
 MAX30102 particleSensor;
@@ -22,6 +24,7 @@ Pulse pulseRed;
 MAFilter bpm;
 #define LED LED_BUILTIN // define led
 Adafruit_HTU31D htu = Adafruit_HTU31D();//declare the name of the temperature sensor
+RH_NRF24 nrf24;
 //------------------------------------------------------------------------------
 //define variables
 int beatAvg, SPO2, SPO2f;  //beat avarage, spo2 and spo2 final variables
@@ -57,6 +60,13 @@ void setup() {
     while (1);
   }
  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ if (!nrf24.init())
+    Serial.println("init failed");
+  // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
+  if (!nrf24.setChannel(1)) //set channel
+    Serial.println("setChannel failed");
+  if (!nrf24.setRF(RH_NRF24::DataRate2Mbps, RH_NRF24::TransmitPower0dBm))
+    Serial.println("setRF failed");
 }
 //------------------------------------------------------------------------------
 //MAIN LOOP
@@ -67,7 +77,8 @@ void loop()  {
   //EVERY 500 MILISECONDS IT PRINTS THE DATA STRING
   if (millis() - tiempo > 500) { //simple millis comparation
     tiempo = millis();
-    Serial.println(datos+temperature);//combine the 2 strings
+    Send_Data(datos+temperature);
+    //Serial.println(datos+temperature);//combine the 2 strings
   }
   // NOTE= IT CAN'T BE USE A DELAY BECAUSE WE WANT TO RUN SIMULTANEUS
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,5 +175,23 @@ void GetOxi() {
   }//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 }
+void Send_Data(String datas){
+  const char *datos = datas.c_str();
+  if(!nrf24.send((uint8_t *)datos, strlen(datos)))Serial.println("Something happened in the message send!");
+  //Serial.println("It was sended!");
+  nrf24.waitPacketSent();
+  uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];//create the storage of 32 bytes for the message incoming
+  uint8_t len = sizeof(buf);// lenght of the buffer.
+  if (nrf24.recv(buf, &len)) // if we receive an answer
+    {
+      Serial.print("got reply: ");// print that it got an answer
+      Serial.println((char*)buf);//print the message
+    }
+    else
+    {
+      Serial.println("recv failed");// if something failed on the incoming message
+    }
+}
+
 //------------------------------------------------------------------------------
 //Gerardo Fregoso Jiménez 2022
