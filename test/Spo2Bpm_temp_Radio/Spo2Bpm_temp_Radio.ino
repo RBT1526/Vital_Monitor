@@ -1,128 +1,140 @@
-//ARDUINO UNO CODE GET SPO2,BPM and Temperature
-//
-//
-//
-//Gerardo Fregoso Jiménez Code based on the "j.n.magee max30102 tinypulseppg proyect" and adafruit library
-//
-//Libraries used: j.n.magee max30102 library and Sparkfun drivers, adafruit library for htu31
-//
-//
-//------------------------------------------------------------------------------
-//IMPORT LIBRARIES
+#include <SPI.h>  // incluye libreria SPI para comunicacion con el modulo
+#include <RH_NRF24.h> // incluye la seccion NRF24 de la libreria RadioHead
 #include <Wire.h>
 #include "MAX30102.h"
 #include "Pulse.h"
-#include "heartRate.h"
-#include "Adafruit_HTU31D.h"//adafruit library
-#include <SPI.h>
-#include <RH_NRF24.h>
-//------------------------------------------------------------------------------
-//Declare the libraries variable names
+#include "heartRate.h".
+//INCLUDE TEMP
+#include "Adafruit_HTU31D.h"
+
+Adafruit_HTU31D htu = Adafruit_HTU31D();
+float tempe = 0;
+// fin
+RH_NRF24 nrf24;   // crea objeto con valores por defecto para bus
+
+
 MAX30102 particleSensor;
 Pulse pulseIR;
 Pulse pulseRed;
 MAFilter bpm;
-#define LED LED_BUILTIN // define led
-Adafruit_HTU31D htu = Adafruit_HTU31D();//declare the name of the temperature sensor
-RH_NRF24 nrf24;
-//------------------------------------------------------------------------------
-//define variables
-int beatAvg, SPO2, SPO2f;  //beat avarage, spo2 and spo2 final variables
-bool filter_for_graph = false; // select the filter for the ir and red data
-long shows_counter = 0;  // counter of show rate
+#define LED LED_BUILTIN
+int beatAvg;
+int  SPO2, SPO2f;
+bool filter_for_graph = true;
+uint8_t pcflag = 0;
+uint8_t istate = 0;
+long sleep_counter = 0;
 const byte RATE_SIZE = 6; //Increase this for more averaging. 4 is good.
 byte rates[RATE_SIZE]; //Array of heart rates
-byte rateSpot = 0; //to locate a rate on the array
+byte rateSpot = 0;
 long lastBeat = 0; //Time at which the last beat occurred
-float beatsPerMinute = 0; //operation to get the bpm
-String datos = "bOsO"; //final spo2 and bpm data string
-unsigned long tiempo = 0; //variable for time comparation
-String temperature = "tOf";//declare the temperature variable
-//------------------------------------------------------------------------------
-//SETUP
+float beatsPerMinute;
+String data;
+String data1;
+String final_msj;
+String recivido = "b";
+unsigned long tiempo = 0;
+
+void SEND(int msg) {
+
+  switch (msg) {
+    case 0:
+      Serial.println("error de dispositivo");
+      break;
+    case 1:
+      final_msj = data + data1;
+      send_data(final_msj);
+
+      break;
+
+
+  }
+}
+
 void setup() {
-  Serial.begin(115200); //Start serial comunication at 115200 bps
-  pinMode(LED, OUTPUT);//declare led as an output
-  delay(3000); //wait 3 seconds to start the program
+  pinMode(LED, OUTPUT);
+  // IMPRIMIR(3);
+  delay(3000);
+  Serial.begin(115200);
   Wire.begin();//wire start
   Wire.setClock(400000);//select frequency of the wire clock
-  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  if (!particleSensor.begin(0x57)) //start the max30102 sensor on his i2c address
+
+  // Initialize sensor
+  if (!particleSensor.begin(0x57)) //Use default I2C port, 400kHz speed
   {
-    Serial.println("!SENSOR ERROR! IT DIDN'T START CORRECTLY");// if max30102 wasn't found.
-    while (1); // infinite loop
-  }
-  particleSensor.setup(); // max30102 setup
-  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  //starting the temperature sensor
-  if (!htu.begin(0x40)) {//i2c communication begins
-    Serial.println("Couldn't find sensor!");//if it dosen't find the sensor
+    SEND(0);
     while (1);
   }
- //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
- if (!nrf24.init())
-    Serial.println("init failed");
-  // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
-  if (!nrf24.setChannel(1)) //set channel
-    Serial.println("setChannel failed");
+  if (!htu.begin(0x40)) {
+    Serial.println("Couldn't find sensor!");
+    while (1);
+  }
+
+  particleSensor.setup();
+  if (!nrf24.init()) {
+    Serial.println("fallo de inicializacion");
+    while (1);
+  }
+  if (!nrf24.setChannel(1))
+  {
+    Serial.println("fallo en establecer canal");
+    while (1);
+  }
+
   if (!nrf24.setRF(RH_NRF24::DataRate2Mbps, RH_NRF24::TransmitPower0dBm))
-    Serial.println("setRF failed");
+  {
+    Serial.println("fallo en opciones RF");
+    while (1);
+  }
+  Serial.println("LISYTO");
 }
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
-//------------------------------------------------------------------------------
-//MAIN LOOP
 void loop()  {
-  GetOxi();//call the function to get the spo2 and bpm
-  GetTemp();//call the function to get the temperature
-  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  //EVERY 500 MILISECONDS IT PRINTS THE DATA STRING
-  if (millis() - tiempo > 500) { //simple millis comparation
+
+  loopTemp();
+  loopOxi();
+  checa_info();
+  if (recivido[0] == 'a') {
+    Serial.println("Recivido pa ");
+    recivido = "b";
+  }
+
+
+  if (millis() - tiempo > 500) {
     tiempo = millis();
-    Serial.println(datos+temperature);//combine the 2 strings
+    SEND(1);
   }
-  // NOTE= IT CAN'T BE USE A DELAY BECAUSE WE WANT TO RUN SIMULTANEUS
-  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 }
-//------------------------------------------------------------------------------
-//GET TEMPERATURE FUNCTION
-void GetTemp(){
-  sensors_event_t humidity, temp;//Declare name for sensor event
-  htu.getEvent(&humidity, &temp);// populate temp objects with fresh data
-temperature="t";//put a t to identify when the value start
-temperature+=temp.temperature;//put the value in the string
-temperature+="f";// to finish the string
+void loopTemp() {
+  sensors_event_t humidity, temp;
+
+  htu.getEvent(&humidity, &temp);
+  tempe = temp.temperature;
+  data1 = "T";
+  data1 += tempe;
+  data1 += "F";
 
 }
-
-//------------------------------------------------------------------------------
-//GET SPO2 AND BPM VALUES FUNCTION
-void GetOxi() {
-  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  //Getting the sensors main values
-  particleSensor.check(); // check if the max30102 is working
+void loopOxi() {
+  particleSensor.check();
   long now = millis();   //start time of this cycle
-  if (!particleSensor.available()) return;// check if the max30102 is working
-  uint32_t irValue = particleSensor.getIR(); //get Ir_Led values from the sensor
-  uint32_t redValue = particleSensor.getRed();//get Red_Led values from the sensor
-  particleSensor.nextSample();//change sample
-  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  //Checking if there's a finger or not
-  if (irValue < 5000) { 
-    datos = "bOsO";// if the sensor didn't get a finger change string
-    shows_counter = 0;
+  if (!particleSensor.available()) return;
+  uint32_t irValue = particleSensor.getIR();
+  uint32_t redValue = particleSensor.getRed();
+  particleSensor.nextSample();
+  if (irValue < 5000) {
+    data = "PAOA";
+    sleep_counter = 0;
   }
- //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- //Get the spo2 and bpm values if its a finger
   else {
-    shows_counter += 1; // if is a finger add 1 to  the show counter.
- ///////////////////////////////////////////////////////////////////////////////
-// IR AND RED SIGNAL FILTER
+    sleep_counter += 1;
+
+
     int16_t IR_signal, Red_signal;
     bool beatRed, beatIR;
 
-    if (!filter_for_graph) {    // selection of type of filter
+    if (!filter_for_graph) {
       IR_signal =  pulseIR.dc_filter(irValue) ;
       Red_signal = pulseRed.dc_filter(redValue);
       beatRed = pulseRed.isBeat(pulseRed.ma_filter(Red_signal));
@@ -133,17 +145,17 @@ void GetOxi() {
       beatRed = pulseRed.isBeat(Red_signal);
       beatIR =  pulseIR.isBeat(IR_signal);
     }
-  ///////////////////////////////////////////////////////////////////////////////
-//BPM CALCULATE
-    if (checkForBeat(irValue) == true)// CHECK IF THERE'S A BEAT
+
+
+    if (checkForBeat(irValue) == true)
     {
       //We sensed a beat!
       long delta = millis() - lastBeat;
       lastBeat = millis();
 
-      beatsPerMinute = 60 / (delta / 1000.0); 
+      beatsPerMinute = 60 / (delta / 1000.0);
 
-      if (beatsPerMinute < 255 && beatsPerMinute > 20)// get beat avg
+      if (beatsPerMinute < 255 && beatsPerMinute > 20)
       {
         rates[rateSpot++] = (byte)beatsPerMinute;
         rateSpot %= RATE_SIZE;
@@ -153,28 +165,80 @@ void GetOxi() {
         beatAvg /= RATE_SIZE;
       }
     }
-///////////////////////////////////////////////////////////////////////////////
-   //SPO2 CALCULATE
     long numerator   = (pulseRed.avgAC() * pulseIR.avgDC()) / 256;
     long denominator = (pulseRed.avgDC() * pulseIR.avgAC()) / 256;
     int RX100 = (denominator > 0) ? (numerator * 100) / denominator : 999;
 
-    SPO2f = (10400 - RX100 * 17 + 50) / 100; //spo2 operations
-///////////////////////////////////////////////////////////////////////////////
- //SAMPLES CONDITION_ FOR STABILIZATION 
-    if (shows_counter > 500) {// IF THERE'S 500 SAMPLES(AFTER DETECT A FINGER) OR MORE CHANGE DATA STRING
-      datos = "b";
-      datos += beatAvg;
-      datos += "s";
-      datos += SPO2f;
+    SPO2f = (10400 - RX100 * 17 + 50) / 100;
+
+
+    if (sleep_counter > 500) {
+      data = "P";
+      data += beatAvg;
+      data += "O";
+      data += SPO2f;
 
     }
-    else {//ELSE CHANGE THE DATA STRING TO ANNOUNCE THAT IS TAKING THE SAMPLES
-      datos = "bAsA";
+    else {
+      data = "PXOX";
     }
-    ///////////////////////////////////////////////////////////////////////////////
-  }//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  }
 
 }
-//------------------------------------------------------------------------------
-//Gerardo Fregoso Jiménez 2022
+
+
+
+
+void send_data(String datas) {
+  const char *datis = datas.c_str();
+  //Serial.println(datis);
+  if (!nrf24.send((uint8_t *)datis, strlen(datis)))Serial.println("erroe");
+  // Serial.println("sE ENVIO");
+  nrf24.waitPacketSent();
+}
+
+
+
+void checa_info() {
+
+  uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];  // buffer con longitud maxima de 32 bytes
+  uint8_t len = sizeof(buf);      // obtiene longitud de la cadena
+  if (nrf24.available())      // si hay informacion disponible
+  {
+    if (nrf24.recv(buf, &len))      // si hay informacion valida en el buffer
+    {
+
+      recivido = String((char*)buf);
+      Serial.println(recivido);
+
+      // Serial.println(recivido);
+      /*
+        if(recivido != ""){
+        Serial.println("entre");
+        if(recivido[0] =='a'){
+        digitalWrite(4,HIGH);
+        send_data("ok encendido");
+        recivido = "";
+        }
+        if(recivido[0]== 'b'){
+        digitalWrite(4,LOW);
+
+        send_data("ok encendido");
+        recivido = "";
+        }
+      */
+    }
+    /*
+      Serial.println(recivido.length());
+      if(recivido[0] == 'h')Serial.println("hola xddd");
+      //Serial.print("Recibido: ");   // muestra texto
+      //Serial.println();   // muestra contenido del buffer
+    */
+  }
+  /*
+    else          // si falla la recepcion
+    {
+    Serial.println("fallo en recepcion"); // muestra texto
+    }
+  */
+}
