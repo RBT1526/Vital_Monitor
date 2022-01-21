@@ -75,7 +75,7 @@ void loop()  {
   GetTemp();//call the function to get the temperature
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   //EVERY 500 MILISECONDS IT PRINTS THE DATA STRING
-  if (millis() - tiempo > 500) { //simple millis comparation
+  if (millis() - tiempo > 100) { //simple millis comparation
     tiempo = millis();
     Send_Data(datos+temperature);
     //Serial.println(datos+temperature);//combine the 2 strings
@@ -176,22 +176,41 @@ void GetOxi() {
 
 }
 void Send_Data(String datas){
+nrf24.setModeTx();
   const char *datos = datas.c_str();
   if(!nrf24.send((uint8_t *)datos, strlen(datos)))Serial.println("Something happened in the message send!");
   //Serial.println("It was sended!");
   nrf24.waitPacketSent();
-  uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];//create the storage of 32 bytes for the message incoming
+  nrf24.setModeRx();
+  receive();
+}
+void receive(){
+    uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];//create the storage of 32 bytes for the message incoming
   uint8_t len = sizeof(buf);// lenght of the buffer.
+  if (nrf24.available())
+  {
   if (nrf24.recv(buf, &len)) // if we receive an answer
     {
-      Serial.print("got reply: ");// print that it got an answer
-      Serial.println((char*)buf);//print the message
+     String data_received =  String((char*)buf);
+      //Serial.print("got reply: ");// print that it got an answer
+      Serial.println(data_received);//print the message
+      if (data_received[0] == 'A') {
+    Serial.println("Recivido pa ");
+    data_received = "without data";
+    delay(5000);
+    if (!particleSensor.begin(0x57)) //start the max30102 sensor on his i2c address
+  {
+    Serial.println("!SENSOR ERROR! IT DIDN'T START CORRECTLY");// if max30102 wasn't found.
+  }
+  particleSensor.setup(); // max30102 setup
+  shows_counter = 0;
+  }
     }
     else
     {
       Serial.println("recv failed");// if something failed on the incoming message
     }
+  }
 }
-
 //------------------------------------------------------------------------------
 //Gerardo Fregoso Jiménez 2022
