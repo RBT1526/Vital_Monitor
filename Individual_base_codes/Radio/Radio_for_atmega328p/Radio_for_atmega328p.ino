@@ -14,7 +14,8 @@
 // Singleton instance of the radio driver
 RH_NRF24 nrf24;
 //-----------------------------------------------------------------------------------
-//SETup
+String datas = "Hola como estas?";
+//SETUP
 void setup()
 {
   Serial.begin(115200); //start comunicaction at 115200 bps
@@ -34,9 +35,14 @@ void loop()
   Serial.println("Sending to nrf24_server");//print a message to announce the status
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   // Send a message to nrf24_server
+  const char *datos = datas.c_str();
+  if(!nrf24.send((uint8_t *)datos, strlen(datos)))Serial.println("Something happened in the message send!");
+  Serial.println("It was sended!");
+  nrf24.waitPacketSent();
+  /*
   uint8_t data[] = "Hello World!";//uint8_t variable with the text to send
   nrf24.send(data, sizeof(data));//command to send the message
-  nrf24.waitPacketSent();//wait until it send the message
+  nrf24.waitPacketSent();//wait until it send the message*/
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   // Now wait for a reply
   uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];//create the storage of 32 bytes for the message incoming

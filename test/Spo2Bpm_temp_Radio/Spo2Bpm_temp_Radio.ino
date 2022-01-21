@@ -14,8 +14,6 @@
 #include "Pulse.h"
 #include "heartRate.h"
 #include "Adafruit_HTU31D.h"//adafruit library
-#include <SPI.h>
-#include <RH_NRF24.h>
 //------------------------------------------------------------------------------
 //Declare the libraries variable names
 MAX30102 particleSensor;
@@ -24,7 +22,6 @@ Pulse pulseRed;
 MAFilter bpm;
 #define LED LED_BUILTIN // define led
 Adafruit_HTU31D htu = Adafruit_HTU31D();//declare the name of the temperature sensor
-RH_NRF24 nrf24;
 //------------------------------------------------------------------------------
 //define variables
 int beatAvg, SPO2, SPO2f;  //beat avarage, spo2 and spo2 final variables
@@ -60,16 +57,7 @@ void setup() {
     while (1);
   }
  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
- if (!nrf24.init())
-    Serial.println("init failed");
-  // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
-  if (!nrf24.setChannel(1)) //set channel
-    Serial.println("setChannel failed");
-  if (!nrf24.setRF(RH_NRF24::DataRate2Mbps, RH_NRF24::TransmitPower0dBm))
-    Serial.println("setRF failed");
 }
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-
 //------------------------------------------------------------------------------
 //MAIN LOOP
 void loop()  {
