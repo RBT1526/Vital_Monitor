@@ -106,8 +106,8 @@ void loop()  {
 void GetTemp(){
   sensors_event_t humidity, temp;//Declare name for sensor event
   htu.getEvent(&humidity, &temp);// populate temp objects with fresh data
-temperature="t";//put a t to identify when the value start
-temperature+=temp.temperature;//put the value in the string
+
+temperature=temp.temperature;//put the value in the string
 temperature+="f";// to finish the string
 
 }
@@ -126,7 +126,7 @@ void GetOxi() {
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   //Checking if there's a finger or not
   if (irValue < 5000) { 
-    datos = "bOsO";// if the sensor didn't get a finger change string
+    datos = "ObOs";// if the sensor didn't get a finger change string
     shows_counter = 0;
   }
  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -179,14 +179,15 @@ void GetOxi() {
 ///////////////////////////////////////////////////////////////////////////////
  //SAMPLES CONDITION_ FOR STABILIZATION 
     if (shows_counter > 500) {// IF THERE'S 500 SAMPLES(AFTER DETECT A FINGER) OR MORE CHANGE DATA STRING
-      datos = "b";
-      datos += beatAvg;
-      datos += "s";
+      datos = beatAvg;
+      datos += "b";
       datos += SPO2f;
+      datos += "s";
+      
 
     }
     else {//ELSE CHANGE THE DATA STRING TO ANNOUNCE THAT IS TAKING THE SAMPLES
-      datos = "bAsA";
+      datos = "AbAs";
     }
     ///////////////////////////////////////////////////////////////////////////////
   }//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -268,16 +269,26 @@ void button_function(int delaytime, int mode, int individualmode ) { //request a
 void get_data() { 
   button_function(200, 0, 1); // Start the start button for 200 miliseconds
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  while (data.substring(0, 9) != "measuring") { // wait until the proccess finish
+  while (data.substring(9, 12) != "err") { // wait until the proccess finis
     if (Serial.available()) { // check the serial data
       data = Serial.readStringUntil('\n');// in the variable data we store the data
     }
   }
-  
-  
+  Serial.println(data.substring(13,14));
+  if(data.substring(13, 14) != "0"){
+    Serial.println("Entre a la cochinada esta");
+    pressure_dats ="yOdOhOZ";
+    data = "";
+flag = 0;
+        delay(100);
+        button_function(200, 0, 1); // Start the start button for 200 miliseconds
+    }
+  if(data.substring(13, 14) == "0"){
+      Serial.println("Entre a la else");
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  delay(100); // 100 miliseconds delay
+  delay(1700); // 100 miliseconds delay
   button_function(200, 0, 0); // start the memory button
+  Serial.println("ya pase el function");
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   while (flag == 0) { // while the flag is empty
     if (Serial.available()) { // if there is data on the serial readings
@@ -309,7 +320,7 @@ pressure_dats += HR;
 pressure_dats += "Z";
 data = "";
 flag = 0;
-
+  }
   }
 
 //------------------------------------------------------------------------------
