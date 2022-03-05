@@ -37,6 +37,8 @@ long lastBeat = 0; //Time at which the last beat occurred
 float beatsPerMinute = 0; //operation to get the bpm
 String datos = "bOsO"; //final spo2 and bpm data string
 unsigned long tiempo = 0; //variable for time comparation
+unsigned long tempo = 0; //variable for time comparation
+bool tempos = false;
 String temperature = "tOf";//declare the temperature variable
 const int start = 2;  //declare the variable for the start button
 const int memory = 3;  //start is a cable on pin 10 to a transistor conected to the buttons, same with memory
@@ -46,6 +48,7 @@ int diastolic = 0;//variable to save the diastolic
 int systolic= 0;//variable to save the systolic
 int flag = 0; //a flag
 String pressure_dats = "";
+String pressurefull = "";
 //------------------------------------------------------------------------------
 //SETUP
 void setup() {
@@ -94,7 +97,12 @@ void loop()  {
   //EVERY 500 MILISECONDS IT PRINTS THE DATA STRING
   if (millis() - tiempo > 100) { //simple millis comparation
     tiempo = millis();
+    if(pressurefull.indexOf("c") != -1){
+    Send_Data(datos+temperature);
+    }
+    else{
     Send_Data(datos+temperature+pressure_dats);
+    }
     //Serial.println(datos+temperature);//combine the 2 strings
   }
   // NOTE= IT CAN'T BE USE A DELAY BECAUSE WE WANT TO RUN SIMULTANEUS
@@ -214,19 +222,22 @@ void receive(){
       //Serial.print("got reply: ");// print that it got an answer
       Serial.println(data_received);//print the message
       if (data_received[0] == 'M') {
-    pressure_dats = "";
-    pressure_dats = "";
+      pressurefull = "c";
       } 
       if (data_received[0] == 'A') {
     Serial.println("Recivido pa ");
     data_received = "without data";
+    if(millis()-tempo > 10000 && tempos == true || tempo == 0){
     get_data();// call the get_data function
+    
     if (!particleSensor.begin(0x57)) //start the max30102 sensor on his i2c address
   {
     Serial.println("!SENSOR ERROR! IT DIDN'T START CORRECTLY");// if max30102 wasn't found.
   }
   particleSensor.setup(); // max30102 setup
   shows_counter = 0;
+    }
+    
   }
     }
     else
@@ -320,7 +331,12 @@ pressure_dats += HR;
 pressure_dats += "Z";
 data = "";
 flag = 0;
+
   }
+  pressurefull = "a";
+  tempo = millis();
+  tempos = true;
+  
   }
 
 //------------------------------------------------------------------------------
