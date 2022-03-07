@@ -1,5 +1,3 @@
-VC MONITORING
+VC MONITOR
 
-
-# Medical_project
 Gerardo Fregoso Jiménez Medical Proyect repositorie

@@ -69,11 +69,11 @@ void setup() {
   pinMode(2, OUTPUT); //Declare the led pin as output
   miBt.begin(38400);// start the Bluethooth communication
   EEPROM.begin(512); //Start the eeprom with 512 bytes
-  /*
+  
   send_eeprom(0, ""); // send the ssid to the eeprom
   send_eeprom(50, ""); // send the pass to the eeprom
   send_eeprom(100, ""); // send the pass to the eeprom
-  ¨*/
+  
   getssid = read_eeprom(0);// reead the ssid of the eeprom
   getpass = read_eeprom(50); // read the pass of the eeprom
   Serial.println("Lecture finished");//message
@@ -138,7 +138,7 @@ void setup() {
 
             Serial.print(F("deserializeJson() failed: "));
             Serial.println(error.f_str());
-            miBt.print("ERROR");
+            miBt.print("ERRORES");
           }
           else {
 
@@ -183,7 +183,7 @@ void setup() {
 
                 send_eeprom(0, ssid); // send the ssid to the eeprom
                 send_eeprom(50, pass); // send the pass to the eeprom
-                send_eeprom(100, pass); // send the ssid to the eepro
+                send_eeprom(100, user); // send the ssid to the eepro
                 bandera = 1;
                 miBt.print("OKA");
               } // get the string of Device
