@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:esptouch_smartconfig/esp_touch_result.dart';
 import 'package:esptouch_smartconfig/esptouch_smartconfig.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app1/screens/home_screens/home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -21,6 +24,35 @@ class TaskRoute extends StatefulWidget {
 
 class TaskRouteState extends State<TaskRoute> {
   late Stream<ESPTouchResult>? _stream;
+  final database = FirebaseDatabase.instance.ref();
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  void check_for_datahub(var _res) async {
+    final result = _res.toList(growable: false)[0];
+    final Dir_data = result.ip.toString() + result.bssid.toString();
+    final user = await auth.currentUser;
+    final uid = user?.uid;
+    final udatabase = database.child("VitalMonitor").child(uid.toString());
+    await udatabase.child("Dir").get().then((value) async {
+      String? _Dir = value.value.toString();
+      if (_Dir == "False") {
+        udatabase.update({"Dir": Dir_data});
+      } else {
+        await udatabase.child("Iot").child("Switch").get().then((value) {
+          String? _Switch = value.value.toString();
+          if (_Switch == "False") {
+            udatabase.child("Iot").update({"Switch": Dir_data});
+          } else {
+            udatabase.child("Iot").update({"Cam": "True"});
+          }
+        }).onError((error, stackTrace) {
+          print("Error ${error.toString()}");
+        });
+        udatabase.child("Iot").update({"Switch": Dir_data});
+      }
+    }).onError((error, stackTrace) {
+      print("Error ${error.toString()}");
+    });
+  }
 
   @override
   void initState() {
@@ -388,9 +420,9 @@ class TaskRouteState extends State<TaskRoute> {
               ),
               child: GestureDetector(
                 onTap: () {
-                  final result = _results.toList(growable: false)[0];
-                  print(result.ip);
-                  Navigator.of(context).pop(_results);
+                  //send_first_dat(_results, Navigator, context);
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => home_page()));
                 },
                 child: Container(
                   width: double.maxFinite,
@@ -489,12 +521,16 @@ class TaskRouteState extends State<TaskRoute> {
             switch (snapshot.connectionState) {
               case ConnectionState.active:
                 _results.add(snapshot.data!);
+                check_for_datahub(_results);
+
                 return resultList(context, ConnectionState.active);
               case ConnectionState.none:
                 return noneState(context);
               case ConnectionState.done:
                 if (snapshot.hasData) {
                   _results.add(snapshot.data!);
+                  check_for_datahub(_results);
+
                   return resultList(context, ConnectionState.done);
                 } else
                   return noneState(context);

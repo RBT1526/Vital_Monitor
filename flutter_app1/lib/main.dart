@@ -1,10 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app1/screens/New_data_hub/Start_connect_data_hub.dart';
-import 'package:flutter_app1/screens/auth/singin_screen.dart';
 import 'package:flutter_app1/screens/auth/welcome_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_app1/esplib/connectivity_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

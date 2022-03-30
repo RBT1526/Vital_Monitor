@@ -1,9 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app1/func/func.dart';
 import 'package:flutter_app1/reusable_widgets/reusable_widget.dart';
+import 'package:flutter_app1/screens/New_data_hub/Start_connect_data_hub.dart';
 import 'package:flutter_app1/screens/auth/forgot_pass_screen.dart';
 import 'package:flutter_app1/screens/auth/sing_up_screen.dart';
+import 'package:flutter_app1/screens/home_screens/home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_database/firebase_database.dart';
 
@@ -15,8 +16,40 @@ class SignInscreen extends StatefulWidget {
 }
 
 class _SignInscreenState extends State<SignInscreen> {
+  final FirebaseAuth auth = FirebaseAuth.instance;
+
   TextEditingController password_text_controller = TextEditingController();
   TextEditingController email_text_Controller = TextEditingController();
+
+  void singin_func() async {
+    await auth
+        .signInWithEmailAndPassword(
+            email: email_text_Controller.text,
+            password: password_text_controller.text)
+        .then((value) async {
+      final database = FirebaseDatabase.instance.ref();
+
+      final user = await auth.currentUser;
+      final uid = user?.uid;
+      final udatabase =
+          database.child("VitalMonitor").child(uid.toString()).child("Dir");
+      await udatabase.get().then((value) {
+        String? _Dir = value.value.toString();
+        if (_Dir == "False") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => start_conf_hub()));
+        } else {
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => home_page()));
+        }
+      }).onError((error, stackTrace) {
+        print("Error ${error.toString()}");
+      });
+    }).onError((error, stackTrace) {
+      print("Error ${error.toString()}");
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -263,6 +296,7 @@ class _SignInscreenState extends State<SignInscreen> {
               alignment: Alignment.topRight,
               child: TextButton(
                 onPressed: () async {
+                  /*
                   await Future<void>.delayed(Duration(milliseconds: 100));
                   await Navigator.push<void>(
                     context,
@@ -270,6 +304,7 @@ class _SignInscreenState extends State<SignInscreen> {
                       builder: (context) => forgot_pass(),
                     ),
                   );
+                  */
                 },
                 child: Text(r'''¿Olvidaste tu contraseña?''',
                     style: GoogleFonts.poppins(
@@ -321,8 +356,7 @@ class _SignInscreenState extends State<SignInscreen> {
               ),
               child: GestureDetector(
                 child: singInsingUpButton(context, "Iniciar sesión", () {
-                  prueba_func(
-                      password_text_controller, email_text_Controller, context);
+                  singin_func();
                 }),
               ),
             ),

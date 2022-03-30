@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app1/reusable_widgets/reusable_widget.dart';
 import 'package:flutter_app1/screens/auth/forgot_pass_screen.dart';
@@ -14,11 +15,43 @@ class Sing_up_page extends StatefulWidget {
 }
 
 class _Sing_up_pageState extends State<Sing_up_page> {
+  final FirebaseAuth auth = FirebaseAuth.instance;
+
   TextEditingController name_text_controller = TextEditingController();
   TextEditingController email_text_Controller = TextEditingController();
   TextEditingController password_text_controller = TextEditingController();
   TextEditingController passwordconfirm_text_Controller =
       TextEditingController();
+
+  void register() async {
+    await auth
+        .createUserWithEmailAndPassword(
+            email: email_text_Controller.text,
+            password: password_text_controller.text)
+        .then((value) async {
+      final database = FirebaseDatabase.instance.ref();
+      final vdatabase = database.child("VitalMonitor");
+      final user = await auth.currentUser;
+      final uid = user?.uid;
+      final sing_up_data = <String, dynamic>{
+        uid.toString(): {
+          "Dir": "False",
+          "Data": {"init": "true"},
+          "Iot": {"Press": "False", "Switch": "False", "Cam": "False"},
+          "User": {"name": name_text_controller.text}
+        }
+      };
+      await vdatabase.update(sing_up_data).then((value) {
+        Navigator.push(
+            context, MaterialPageRoute(builder: (context) => SignInscreen()));
+      }).onError((error, stackTrace) {
+        print("Error ${error.toString()}");
+      });
+    }).onError((error, stackTrace) {
+      print("Error ${error.toString()}");
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -355,18 +388,7 @@ class _Sing_up_pageState extends State<Sing_up_page> {
                         ),
                         child: GestureDetector(
                           child: singInsingUpButton(context, "Registrarse", () {
-                            FirebaseAuth.instance
-                                .createUserWithEmailAndPassword(
-                                    email: email_text_Controller.text,
-                                    password: password_text_controller.text)
-                                .then((value) {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => forgot_pass()));
-                            }).onError((error, stackTrace) {
-                              print("Error ${error.toString()}");
-                            });
+                            register();
                           }),
                         ),
                       ),

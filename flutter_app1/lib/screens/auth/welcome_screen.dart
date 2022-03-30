@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app1/reusable_widgets/reusable_widget.dart';
 import 'package:flutter_app1/screens/auth/singin_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
