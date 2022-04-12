@@ -36,7 +36,14 @@ class _Sing_up_pageState extends State<Sing_up_page> {
       final sing_up_data = <String, dynamic>{
         uid.toString(): {
           "Dir": "False",
-          "Data": {"init": "true"},
+          "Data": {
+            "BPM": "0",
+            "Dis": "0",
+            "SPO2": "0",
+            "Sys": "200",
+            "Temp": "0",
+            "date": "0"
+          },
           "Iot": {"Press": "False", "Switch": "False", "Cam": "False"},
           "User": {"name": name_text_controller.text}
         }

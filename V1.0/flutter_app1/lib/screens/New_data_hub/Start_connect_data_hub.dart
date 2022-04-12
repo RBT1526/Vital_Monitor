@@ -108,7 +108,7 @@ class _start_conf_hubState extends State<start_conf_hub> {
                             color: Color(0xFF000000)),
                       ),
                     ),
-                    child: Text(r'''Añade un DataHub''',
+                    child: Text(r'''Añade un Dispositivo''',
                         style: GoogleFonts.outfit(
                           textStyle: TextStyle(
                             color: const Color(0xFF000000),
