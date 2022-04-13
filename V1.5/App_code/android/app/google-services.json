@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "22664224405",
+    "firebase_url": "https://medicproyect-d2db9-default-rtdb.firebaseio.com",
+    "project_id": "medicproyect-d2db9",
+    "storage_bucket": "medicproyect-d2db9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:22664224405:android:52a37febadabd5833f459c",
+        "android_client_info": {
+          "package_name": "com.example.flutter_app1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "22664224405-5s53622c7q5jf6856l5c562kher64lsr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.flutter_app1",
+            "certificate_hash": "8b9e832734b39eb8acb39b4e4cc7d771ec310817"
+          }
+        },
+        {
+          "client_id": "22664224405-o0q23doje2p15bn1s5h34bpv8ftpfq0g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHUHJ4Vf5jc10YaVG_CIAh6ZohquBMrY4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "22664224405-o0q23doje2p15bn1s5h34bpv8ftpfq0g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
