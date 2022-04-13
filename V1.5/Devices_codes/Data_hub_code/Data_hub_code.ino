@@ -131,10 +131,38 @@ String readStringFromFlash(int addr) { // it want the address
 
 
 void check_for_connection () {
+
+Serial.println("-------------Starting connection try---------");
+e_ssid = readStringFromFlash(0);
+e_pass = readStringFromFlash(50);
+if(e_ssid ==  "" || e_pass == ""){
+    Serial.println("NO SSID OR PASS REGISTERED");
+    Configure_wifi();
+}
+else{
+    WiFi.begin(e_ssid, e_pass);
+    actual_time = millis();
+    while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+    bool check = check_for_button();
+    if(check)
+    erase_eeprom();
+  }
+ Serial.println("-------------Connection finished succesfully---------"); 
+
+  
+
+
+}
+
+/*
+// 1V CHECK EEPROM CODE 
 Serial.println("Reading eeprom values....");
 e_ssid = readStringFromFlash(0);
 e_pass = readStringFromFlash(50);
-Serial.println("Readings finished");
+Serial.println("Readings finished");*/
+
 }
 
 
@@ -163,11 +191,10 @@ bool check_for_button(){
 
 void erase_eeprom(){
     Serial.println("ERASING EEPROM......");
-    for (int i = 0 ; i < EEPROM.length() ; i++) {
-    Serial.println("borrado");
-    EEPROM.write(i, 255);
-  }
+ writeStringToFlash("", 0); // storing ssid at address 0
+  writeStringToFlash("", 50);
   Serial.println("EEPROM ERASED");
+  ESP.restart();
 }
 
 void get_temp_hum () {
@@ -210,7 +237,7 @@ void setup()
  init_radio();
  pinMode(button,INPUT);
 Serial.println("Reset button OK");
-Configure_wifi();
+//Configure_wifi();
 check_for_connection();
 Serial.print("SSID = ");
 Serial.print(e_ssid);
