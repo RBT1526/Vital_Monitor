@@ -30,6 +30,33 @@ void setup()
 //Main Loop
 void loop()
 {
+  if(Serial.available()){
+    String xd = Serial.readString();
+   // Serial.println(xd);
+    xd.trim();
+    if(xd == "a"){
+      uint8_t data[] = "A";
+      //Serial.println("entre a a");
+      nrf24.send(data, sizeof(data));
+      nrf24.waitPacketSent();
+      xd = "b";
+    }
+     if(xd == "c"){
+      uint8_t data[] = "M";
+      //Serial.println("entre a c");
+      nrf24.send(data, sizeof(data));
+      nrf24.waitPacketSent();
+      nrf24.send(data, sizeof(data));
+      nrf24.waitPacketSent();
+      nrf24.send(data, sizeof(data));
+      nrf24.waitPacketSent();
+      nrf24.send(data, sizeof(data));
+      nrf24.waitPacketSent();
+      nrf24.send(data, sizeof(data));
+      nrf24.waitPacketSent();
+      xd = "b";
+    }
+  }
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   //wait for a message
   if (nrf24.available())
@@ -44,14 +71,10 @@ void loop()
     if (nrf24.recv(buf, &len))
     {
       //      NRF24::printBuffer("request: ", buf, len);
+      String data_received =  String((char*)buf);
+      data_received.trim();
       Serial.print("got request: ");
-      Serial.println((char*)buf);
-
-      // Send a reply
-      uint8_t data[] = "And hello back to you";
-      nrf24.send(data, sizeof(data));
-      nrf24.waitPacketSent();
-      Serial.println("Sent a reply");
+      Serial.println(data_received);
     }
     else
     {
