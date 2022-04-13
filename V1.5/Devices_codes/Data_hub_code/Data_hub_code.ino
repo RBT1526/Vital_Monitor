@@ -9,10 +9,11 @@
 //-----------------------------------------------------------------------------------
 //import the libraries
 #include <SPI.h>
+#include <EEPROM.h>
 #include <RH_NRF24.h>
 #include <Wire.h>
 #include <HTU2xD_SHT2x_Si70xx.h>
-
+#include <ESP8266WiFi.h>
 
 long actual_time;
 bool Button_mark = false;
@@ -21,7 +22,11 @@ bool Button_mark = false;
 float Temperature = 0;
 float Humidity = 0;
 
+String ssid = "";
+String pass = ""; 
 
+String e_ssid = "";
+String e_pass = ""; 
 
 
 RH_NRF24 nrf24(2, 0);
@@ -61,15 +66,82 @@ void init_htu () {
   Serial.println("HTU21D OK");
 }
 
+void Configure_wifi(){
+Serial.println("--------------------- Configuration mode --------------------");
+ WiFi.mode(WIFI_STA);
+  WiFi.beginSmartConfig();
+  Serial.println("Waiting for SmartConfig.");
+  while (!WiFi.smartConfigDone()) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("SmartConfig done.");
+  Serial.println("Waiting for WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("WiFi Connected.");
+  ssid = WiFi.SSID();
+    pass = WiFi.psk();
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+  Serial.println("Sending values to eeprom....");
+writeStringToFlash(ssid, 0); // storing ssid at address 0
+writeStringToFlash(pass, 50); // storing pss at address 40
+Serial.println("Values sended");
+Serial.println("--------------------- Configuration Finished --------------------");
+  
+}
 
 
 
+
+
+
+
+void writeStringToFlash(String a,int addr ) { // it want an address and the string to write
+  int len = a.length(); // get the string lenght
+  char inchar[50]; //create a char to save the string
+  a.toCharArray(inchar, len + 1); //change string to array
+  for (int i = 0; i < len; i++) {
+    EEPROM.write(addr + i, inchar[i]); // Write the values in eeprom
+  }
+  for (int i = len; i < 50; i++) {
+    EEPROM.write(addr + i, 255); // clean the other bytes
+  }
+  EEPROM.commit(); // send the values
+
+}
+//-------------------------------------------------------------
+// Function to read the eeprom
+String readStringFromFlash(int addr) { // it want the address
+  byte reading; // byte variable to save the value
+  String strreading; // final string
+  for (int i = addr; i < addr + 50; i++) {
+    reading = EEPROM.read(i); // read every byte of the eeprom
+    if (reading != 255) { // read until theres no values
+      strreading += (char)reading;
+    }
+  }
+  return strreading; // return the final string
+}
+
+
+
+void check_for_connection () {
+Serial.println("Reading eeprom values....");
+e_ssid = readStringFromFlash(0);
+e_pass = readStringFromFlash(50);
+Serial.println("Readings finished");
+}
 
 
 
 
 bool check_for_button(){
-    if((millis()-actual_time) >= 3000){
+    if((millis()-actual_time) >= 5000){
         actual_time = millis();
        Button_mark= false;
         return true;
@@ -87,6 +159,15 @@ bool check_for_button(){
     }
     return false;
     }
+}
+
+void erase_eeprom(){
+    Serial.println("ERASING EEPROM......");
+    for (int i = 0 ; i < EEPROM.length() ; i++) {
+    Serial.println("borrado");
+    EEPROM.write(i, 255);
+  }
+  Serial.println("EEPROM ERASED");
 }
 
 void get_temp_hum () {
@@ -123,12 +204,21 @@ String get_radio_msj(){
 
 void setup()
 {
-  Serial.begin(115200); //start comunication
+  Serial.begin(115200);
+    EEPROM.begin(512);   //start comunication
   init_htu();
  init_radio();
  pinMode(button,INPUT);
 Serial.println("Reset button OK");
- 
+Configure_wifi();
+check_for_connection();
+Serial.print("SSID = ");
+Serial.print(e_ssid);
+Serial.print(" PASS = ");
+Serial.println(e_pass);
+
+Serial.println("-----------SETUP FINISHED----------");
+ actual_time = millis();
 }
 //-----------------------------------------------------------------------------------
 //Main Loop
@@ -145,9 +235,10 @@ void loop()
   Serial.print("% Message = '");
   Serial.print(msj);
   Serial.print("' Button = ");
-  if(check)
+  if(check){
   Serial.println("PRESSED");
-  else
+  erase_eeprom();
+  }else
   Serial.println("");
 
 
