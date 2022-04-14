@@ -23,7 +23,12 @@ QueryFilter query;
 
 
 String token = "";
+String data_value = "";
 
+unsigned long sendDataPrevMillis = 0;
+long timese;
+volatile bool dataChanged = false;
+FirebaseData stream;
 
 void Config_database(){
     Serial.println("--------------FIREBASE CONFIGURATION --------------");
@@ -46,7 +51,7 @@ void search_token(String identifier){
     query.orderBy("Dir");
     query.equalTo(identifier);
 
-    if (Firebase.RTDB.getJSON(&fbdo, "/VitalMonitor", &query))
+    if (Firebase.RTDB.getJSON(&fbdo, "/VitalMonitor/Tokens", &query))
 {
   //Success, then try to read the JSON payload value
 Serial.println("Data callback completed");
@@ -91,6 +96,56 @@ query.clear();
 Serial.println("---------Getting token for data path finished-------------");
 }
 
+void start_streaming (String uidToken){
+    Serial.println("---------------Stream Configuration---------------");
+    Serial.print("Path = ");
+    Serial.println("/VitalMonitor/"+uidToken+"/Iot/Press");
+    Serial.print("Starting the stream........");
+      if(!Firebase.RTDB.beginStream(&stream, "/VitalMonitor/"+uidToken+"/Iot/Press")){
+          Serial.printf("Error :, %s\n\n", stream.errorReason().c_str());
+          ESP.restart();
+          }
+
+    Firebase.RTDB.setStreamCallback(&stream, streamCallback, streamTimeoutCallback);
+Serial.println("OK");
+Serial.println("---------------Stream Configuration finished---------------");
+}
+
+
+
+
+
+
+
+
+
+
+
+void streamCallback(FirebaseStream data)
+{
+data_value = String(data.stringData().c_str());
+    Serial.print("New value! = ");
+  Serial.println(data_value);
+  dataChanged = true;
+}
+
+void streamTimeoutCallback(bool timeout)
+{
+  if (timeout)
+    Serial.println("stream timed out, resuming...\n");
+
+  if (!stream.httpConnected()){
+    
+    Serial.printf("Error with stream: %d, reason: %s\n\n", stream.httpCode(), stream.errorReason().c_str());
+    ESP.restart();    
+  }
+}
+
+
+
+
+
+
 
 
 void setup()
@@ -111,8 +166,8 @@ void setup()
 
     Config_database();
     
-    search_token("192.168.1.9668c63ab8271z");
-    
+    search_token("prueba2.221");
+    start_streaming(token);
     json.add("Bpm", "");
     json.add("SPO2","");
     json.add("Temp","");
@@ -138,11 +193,19 @@ void loop()
     json.set("Dia",89);
 
 
-// aqui debo de mandar las cosas a firebase
-Serial.printf("Send json... %s\n", Firebase.RTDB.pushJSON(&fbdo, "/VitalMonitor/"+token+"/Data", &json) ? "ok" : fbdo.errorReason().c_str());
-delay(1000);
 
-//aqui la condicion de tomar presion
+// aqui debo de mandar las cosas a firebase
+ if (Firebase.ready() && (millis() - sendDataPrevMillis > 3000 || sendDataPrevMillis == 0))
+  {
+    sendDataPrevMillis = millis();
+    Serial.printf("Send json... %s\n", Firebase.RTDB.pushJSON(&fbdo, "/VitalMonitor/"+token+"/Data", &json) ? "ok" : fbdo.errorReason().c_str());
+  }
+
+  if (dataChanged)
+  {
+    dataChanged = false;
+    // When stream data is available, do anything here...
+  }
 
 
 }
