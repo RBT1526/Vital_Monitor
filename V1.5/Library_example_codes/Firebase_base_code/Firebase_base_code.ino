@@ -16,19 +16,17 @@ FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
 FirebaseJson json;
-FirebaseJson json_child;
-FirebaseJsonData result;
+//FirebaseJsonData result;
 QueryFilter query;
-
+FirebaseData stream;
 
 
 String token = "";
 String data_value = "";
 
 unsigned long sendDataPrevMillis = 0;
-long timese;
 volatile bool dataChanged = false;
-FirebaseData stream;
+
 
 void Config_database(){
     Serial.println("--------------FIREBASE CONFIGURATION --------------");

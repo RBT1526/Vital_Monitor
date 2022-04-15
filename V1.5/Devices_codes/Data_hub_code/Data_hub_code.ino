@@ -14,6 +14,21 @@
 #include <Wire.h>
 #include <HTU2xD_SHT2x_Si70xx.h>
 #include <ESP8266WiFi.h>
+#include <Firebase_ESP_Client.h>
+#include <addons/TokenHelper.h>
+#include <addons/RTDBHelper.h>
+#include "time.h"
+#define API_KEY "AIzaSyCKOZaxb6cXjfSdCu8hDgRz59NDJ8hx14Q"
+#define USER_EMAIL "devices@gmail.com"
+#define USER_PASSWORD "gerardo02"
+#define DATABASE_URL "https://medicproyect-d2db9-default-rtdb.firebaseio.com" 
+
+
+const char* ntpServer = "pool.ntp.org";
+const int zone_gmt = -7;
+const long  gmtOffset_sec = zone_gmt * 3600;
+const int   daylightOffset_sec = 3600;
+
 
 long actual_time;
 bool Button_mark = false;
@@ -27,6 +42,14 @@ String pass = "";
 
 String e_ssid = "";
 String e_pass = ""; 
+String token_dir = "";
+
+String token = "";
+String data_value = "";
+
+unsigned long sendDataPrevMillis = 0;
+volatile bool dataChanged = false;
+
 
 
 RH_NRF24 nrf24(2, 0);
@@ -34,12 +57,50 @@ HTU2xD_SHT2x_SI70xx ht2x(HTU2xD_SENSOR, HUMD_12BIT_TEMP_14BIT);
 const byte button = 10;
 
 
-
+FirebaseData fbdo;
+FirebaseAuth auth;
+FirebaseConfig config;
+FirebaseJson json;
+QueryFilter query;
+FirebaseData stream;
 
 
 
 
 // ###############################################################################
+
+bool getLocalTime(struct tm * info, uint32_t ms)
+{
+    uint32_t start = millis();
+    time_t now;
+    while((millis()-start) <= ms) {
+        time(&now);
+        localtime_r(&now, info);
+        if(info->tm_year > (2016 - 1900)){
+            return true;
+        }
+        delay(10);
+    }
+    return false;
+}
+String correct_date (String o_data){
+    int data= o_data.toInt();
+    if(data < 10){
+        return "0"+o_data;
+    }else{
+        return o_data;
+    }
+}
+String Get_time(){
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo,5000)){
+    Serial.println("Failed to obtain time");
+    return "R";
+  }
+  String dateinf = String(String(timeinfo.tm_year).toInt()  + 1900)+ "-"+ correct_date(String(String(timeinfo.tm_mon).toInt() + 1))+ "-"+ correct_date(String(timeinfo.tm_mday))+ " "+correct_date(String(timeinfo.tm_hour))+ ":"+correct_date(String(timeinfo.tm_min))+ ":"+correct_date(String(timeinfo.tm_sec));    
+  return dateinf;
+}
+
 // ###############################################################################
 
 void init_radio () {
@@ -211,7 +272,8 @@ void erase_eeprom(){
 void get_temp_hum () {
  
  Temperature = ht2x.readTemperature();  
- Humidity = ht2x.getCompensatedHumidity(Temperature);       
+ Humidity = ht2x.getCompensatedHumidity(Temperature);  
+
 }
 
 
@@ -245,7 +307,132 @@ String get_radio_msj(){
 
 
 // ###############################################################################
+void Config_database(){
+    Serial.println("--------------FIREBASE CONFIGURATION --------------");
+    config.api_key = API_KEY;
+    auth.user.email = USER_EMAIL;
+    auth.user.password = USER_PASSWORD;
+    config.database_url = DATABASE_URL;
+    Firebase.reconnectWiFi(true);
+    fbdo.setResponseSize(4096);
+    config.token_status_callback = tokenStatusCallback; // see addons/TokenHelper.h
+    config.max_token_generation_retry = 5;
+    Firebase.begin(&config, &auth);
+    Serial.println("--------------FIREBASE CONFIGURATION FINISHED --------------");
+}
+void search_token(String identifier){
+    Serial.println("---------Getting token for data path-------------");
+    query.orderBy("Dir");
+    query.equalTo(identifier);
+
+    if (Firebase.RTDB.getJSON(&fbdo, "/VitalMonitor/Tokens", &query))
+{
+  //Success, then try to read the JSON payload value
+Serial.println("Data callback completed");
+ token = fbdo.jsonString();
+if(token == "{}"){
+    Serial.println("There is no accounts linked");
+    ESP.restart();
+}
+else{
+    Serial.println("Account linked found!");
+FirebaseJson datos(token);
+datos.iteratorBegin();
+FirebaseJson::IteratorValue value = datos.valueAt(0);
+token = String(value.key.c_str());
+datos.iteratorEnd();
+Serial.print("Token= ");
+Serial.println(token);
+}
+/*
+datos.get(result , "oWyKR3UuoVV6Z1yY4V1Sav8c4VJ3");
+ if (result.success)
+    {
+       
+        Serial.println(result.to<String>().c_str());
+    }
+else{
+    Serial.println("Fail_json dump");
+}
+*/
+
+}
+else
+{
+  //Failed to get JSON data at defined node, print out the error reason
+  Serial.println("Account searching error: ");
+  Serial.println(fbdo.errorReason());
+  ESP.restart();
+}
+
+//Clear all query parameters
+query.clear();
+Serial.println("---------Getting token for data path finished-------------");
+}
+
+void start_streaming (String uidToken){
+    Serial.println("---------------Stream Configuration---------------");
+    Serial.print("Path = ");
+    Serial.println("/VitalMonitor/"+uidToken+"/Iot/Press");
+    Serial.print("Starting the stream........");
+      if(!Firebase.RTDB.beginStream(&stream, "/VitalMonitor/"+uidToken+"/Iot/Press")){
+          Serial.printf("Error :, %s\n\n", stream.errorReason().c_str());
+          ESP.restart();
+          }
+
+    Firebase.RTDB.setStreamCallback(&stream, streamCallback, streamTimeoutCallback);
+Serial.println("OK");
+Serial.println("---------------Stream Configuration finished---------------");
+}
+
+
+
+
+
+
+
+
+
+
+
+void streamCallback(FirebaseStream data)
+{
+data_value = String(data.stringData().c_str());
+    Serial.print("New value! = ");
+  Serial.println(data_value);
+  dataChanged = true;
+}
+
+void streamTimeoutCallback(bool timeout)
+{
+  if (timeout)
+    Serial.println("stream timed out, resuming...\n");
+
+  if (!stream.httpConnected()){
+    
+    Serial.printf("Error with stream: %d, reason: %s\n\n", stream.httpCode(), stream.errorReason().c_str());
+    ESP.restart();    
+  }
+}
 // ###############################################################################
+
+
+
+
+void json_form(String raw_data) {
+  
+  int Pos =  raw_data.indexOf("b");
+  int Pos_1 = raw_data.indexOf("s");
+  json.set("Bpm",raw_data.substring(0, Pos));
+  json.set("Spo2",raw_data.substring((Pos + 1), Pos_1));
+  Pos = raw_data.indexOf("f");
+  json.set("Temp",raw_data.substring((Pos_1 + 1), Pos));
+  json.set("Ahumi",String(Humidity));
+  json.set("Atemp",String(Temperature));
+  json.set("Date",Get_time());
+}
+
+
 
 void setup()
 {
@@ -257,8 +444,27 @@ void setup()
 Serial.println("Reset button OK");
 //Configure_wifi();
 check_for_connection();
+configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  Serial.println(Get_time());
+token_dir = WiFi.macAddress();
+  token_dir.replace(":","");
+  token_dir.toLowerCase();
+  token_dir = WiFi.localIP().toString() + token_dir;
+  Serial.print("TOKEN FOR DIR = ");
+  Serial.println(token_dir);
+Config_database();
+search_token(token_dir);
+start_streaming(token);
 
-
+    json.add("Bpm", "");
+    json.add("Spo2","");
+    json.add("Temp","");
+    json.add("Date","");
+    json.add("Sys","");
+    json.add("Dia","");
+    json.add("Ahumi","");
+    json.add("Atemp","");
+    Serial.printf("Send String... %s\n", Firebase.RTDB.setString(&fbdo, "/VitalMonitor/"+token+"/Iot/Press", "False") ? "ok" : fbdo.errorReason().c_str());
 Serial.println("-----------SETUP FINISHED----------");
  actual_time = millis();
 }
@@ -267,9 +473,17 @@ Serial.println("-----------SETUP FINISHED----------");
 void loop()
 {
   bool check = check_for_button();
-  
   get_temp_hum();
   String msj = get_radio_msj();
+  if(Firebase.ready() && msj != "" && (millis() - sendDataPrevMillis > 1000 || sendDataPrevMillis == 0)){
+  json_form(msj);
+  sendDataPrevMillis = millis();
+  Serial.printf("Send json... %s\n", Firebase.RTDB.pushJSON(&fbdo, "/VitalMonitor/"+token+"/Data", &json) ? "ok" : fbdo.errorReason().c_str());
+  Serial.println(json.raw());
+  }
+  
+
+  /*
   Serial.print("Temperature = ");
   Serial.print(Temperature);
   Serial.print("C Humidity = ");
@@ -277,13 +491,24 @@ void loop()
   Serial.print("% Message = '");
   Serial.print(msj);
   Serial.print("' Button = ");
+  */
   if(check){
   Serial.println("PRESSED");
   erase_eeprom();
-  }else
+  }
+  /*else
   Serial.println("");
+  */
 
-
+  if (dataChanged)
+  {
+    // AQUI SE HACE LO DE SACAR EL DIA Y SYS
+    dataChanged = false;
+    if(data_value == "True"){
+      Serial.printf("Send String... %s\n", Firebase.RTDB.setString(&fbdo, "/VitalMonitor/"+token+"/Iot/Press", "False") ? "ok" : fbdo.errorReason().c_str());
+    }
+    
+  }
 
 
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
