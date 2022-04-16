@@ -39,6 +39,7 @@ void loop()
       //Serial.println("entre a a");
       nrf24.send(data, sizeof(data));
       nrf24.waitPacketSent();
+      Serial.println("Sended");
       xd = "b";
     }
      if(xd == "c"){

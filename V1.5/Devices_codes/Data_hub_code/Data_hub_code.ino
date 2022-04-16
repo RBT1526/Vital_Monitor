@@ -47,6 +47,10 @@ String token_dir = "";
 String token = "";
 String data_value = "";
 
+String diastolic = "";
+String systolic = "";
+String data_sys_dia_msj = "";
+
 unsigned long sendDataPrevMillis = 0;
 volatile bool dataChanged = false;
 
@@ -95,6 +99,7 @@ String Get_time(){
   struct tm timeinfo;
   if(!getLocalTime(&timeinfo,5000)){
     Serial.println("Failed to obtain time");
+    ESP.restart();
     return "R";
   }
   String dateinf = String(String(timeinfo.tm_year).toInt()  + 1900)+ "-"+ correct_date(String(String(timeinfo.tm_mon).toInt() + 1))+ "-"+ correct_date(String(timeinfo.tm_mday))+ " "+correct_date(String(timeinfo.tm_hour))+ ":"+correct_date(String(timeinfo.tm_min))+ ":"+correct_date(String(timeinfo.tm_sec));    
@@ -235,7 +240,7 @@ Serial.println("Readings finished");*/
 
 }
 bool check_for_button(){
-    if((millis()-actual_time) >= 5000){
+    if((millis()-actual_time) >= 5000 && Button_mark){
         actual_time = millis();
        Button_mark= false;
         return true;
@@ -427,13 +432,201 @@ void json_form(String raw_data) {
   json.set("Spo2",raw_data.substring((Pos + 1), Pos_1));
   Pos = raw_data.indexOf("f");
   json.set("Temp",raw_data.substring((Pos_1 + 1), Pos));
+  
+  json.set("Date",Get_time());
+  if(diastolic != "" && systolic != ""){
+    if(diastolic == "O" || systolic == "O"){
+json.set("Dia","");
+  json.set("Sys","");
+    }else{
+    json.set("Dia",diastolic);
+  json.set("Sys",systolic);
+    }
+  diastolic = "";
+  systolic = "";
+
+  }
+  else{
+    
+    json.set("Dia","");
+  json.set("Sys","");
+    
+  }
+  if(String(Humidity) == "255.00" || String(Temperature) == "255.00"){
+json.set("Ahumi","R");
+  json.set("Atemp","R");
+  }
+  else{
   json.set("Ahumi",String(Humidity));
   json.set("Atemp",String(Temperature));
-  json.set("Date",Get_time());
+  }
 }
 
 
+void send_data(String data_to_send){
+  const char *send_form = data_to_send.c_str();
+  if(!nrf24.send((uint8_t *)send_form, strlen(send_form))){
+  Serial.println("Error sending the message");
+  ESP.restart();
+  }
+  Serial.println("Message sended!");
+  nrf24.waitPacketSent();
+}
+int check_for_dia(){
+  Serial.println("checking_for_residual message");
+String msj = get_radio_msj();
 
+long temp = millis();
+byte msj_count = 0;
+
+while (msj == ""){
+  
+  msj = get_radio_msj();
+  if((millis()-temp)>= 1000){
+    Serial.println("waiting for message....");
+    temp = millis();
+    msj_count++;
+  }
+  if(msj_count >= 7){
+  Serial.println("message not found returning value");
+  return 3;}
+}
+Serial.println("message received");
+if(msj.indexOf("Z") != -1){
+data_sys_dia_msj = msj;
+return 1;
+}
+else
+return 2;
+}
+void format_pressure_data(){
+  int pos=  data_sys_dia_msj.indexOf("y");
+    int pos1 = data_sys_dia_msj.indexOf("d");
+    systolic = data_sys_dia_msj.substring((pos+1), pos1);
+    pos = data_sys_dia_msj.indexOf("h");
+    diastolic = data_sys_dia_msj.substring((pos1 + 1), pos);
+    data_sys_dia_msj = "";
+}
+bool get_dia_sys(){
+  Serial.println("---------------------getting_pressure_Data----------");
+Serial.println("---------------First part-----------------");
+send_data("M");
+
+int  checked = 0;
+while(checked != 2){
+checked = check_for_dia();
+switch (checked)
+{
+case 1:
+  Serial.println("The message have dia and sys rechecking");
+  send_data("M");
+  break;
+
+case 2:
+Serial.println("The message was received");
+checked = 2;
+  break;
+  case 3:
+  Serial.println("Theres no message");
+  return false;
+  break;
+}
+}
+Serial.println("---------------second part-----------------");
+
+
+send_data("A");
+
+
+
+Serial.println("waiting 5 seconds");
+delay(5000);
+
+
+
+checked = check_for_dia();
+
+
+while(checked != 3){
+
+
+checked = check_for_dia();
+switch (checked)
+{
+
+case 1:
+  Serial.println("The message have dia and sys rechecking");
+  send_data("M");
+  break;
+
+case 2:
+Serial.println("The message was received");
+send_data("A");
+
+Serial.println("waiting 3 seconds");
+delay(3000);
+
+  break;
+
+  case 3:
+  Serial.println("Theres no message");
+  Serial.println("MESSAGE RECEIVED SUCCESFULLY");
+  break;
+
+}
+}
+Serial.println("---------------------third part--------------");
+
+long time_temp = millis();
+checked = 0;
+Serial.println("Starting wait_time");
+while((millis()-time_temp)< 90000){
+  Serial.print("MILLIS_TEMP = ");
+  Serial.println(millis()-time_temp);
+  Firebase.RTDB.readStream(&stream);
+checked = check_for_dia();
+switch (checked)
+{
+
+case 1:
+    Serial.println("The message have dia and sys extracting values");
+    format_pressure_data();  
+    return true;
+  break;
+
+case 2:
+  Serial.println("The message don't have the pressure data");
+  return false;
+  break;
+
+}
+
+}
+Serial.println("exeded time");
+
+Serial.println("---------------------data_function finished----------");
+return false;
+}
+
+void erase_data_stream(){
+  Serial.println("TRYING GET DATA OF STREAM");
+    bool checked_msj = false;
+    while(checked_msj == false){
+    if (Firebase.RTDB.getString(&fbdo, "/VitalMonitor/"+token+"/Iot/Press")) {
+      if(fbdo.to<String>() != "False"){
+        Serial.printf("Send String... %s\n", Firebase.RTDB.setString(&fbdo, "/VitalMonitor/"+token+"/Iot/Press", "False") ? "ok" : fbdo.errorReason().c_str());
+      }else{
+        checked_msj = true;
+      }
+    
+
+  } else {
+    Serial.println(fbdo.errorReason());
+    ESP.restart();
+  }
+    }
+    Serial.println("DATA_checked");
+}
 void setup()
 {
   Serial.begin(115200);
@@ -454,6 +647,7 @@ token_dir = WiFi.macAddress();
   Serial.println(token_dir);
 Config_database();
 search_token(token_dir);
+erase_data_stream();
 start_streaming(token);
 
     json.add("Bpm", "");
@@ -464,7 +658,8 @@ start_streaming(token);
     json.add("Dia","");
     json.add("Ahumi","");
     json.add("Atemp","");
-    Serial.printf("Send String... %s\n", Firebase.RTDB.setString(&fbdo, "/VitalMonitor/"+token+"/Iot/Press", "False") ? "ok" : fbdo.errorReason().c_str());
+    
+    
 Serial.println("-----------SETUP FINISHED----------");
  actual_time = millis();
 }
@@ -502,10 +697,20 @@ void loop()
 
   if (dataChanged)
   {
-    // AQUI SE HACE LO DE SACAR EL DIA Y SYS
     dataChanged = false;
     if(data_value == "True"){
-      Serial.printf("Send String... %s\n", Firebase.RTDB.setString(&fbdo, "/VitalMonitor/"+token+"/Iot/Press", "False") ? "ok" : fbdo.errorReason().c_str());
+      bool data_get = get_dia_sys();
+      if(data_get){
+      Serial.println("finished_data_sys");
+      }
+      else{
+        diastolic = "";
+        systolic = "";
+        data_sys_dia_msj = "";
+        Serial.println("finished_data_sys with error");
+      }
+      erase_data_stream();  
+    actual_time = millis();
     }
     
   }
