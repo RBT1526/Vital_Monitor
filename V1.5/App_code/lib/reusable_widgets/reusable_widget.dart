@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app1/reusable_widgets/functions_data.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-TextField reusabletextfield(
-    String text, bool isPasswordType, TextEditingController controller) {
-  return TextField(
+TextFormField reusabletextfield(String text, bool isPasswordType,
+    TextEditingController controller, var validator) {
+  return TextFormField(
     controller: controller,
     obscureText: isPasswordType,
     enableSuggestions: !isPasswordType,
     autocorrect: !isPasswordType,
     cursorColor: Colors.black,
+    validator: validator,
     style: GoogleFonts.outfit(
       textStyle: TextStyle(
         color: const Color(0xFF000000),

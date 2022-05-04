@@ -1,6 +1,7 @@
 import 'package:esptouch_smartconfig/esp_touch_result.dart';
 import 'package:flutter_app1/esplib/task_route_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app1/reusable_widgets/functions_data.dart';
 import 'package:flutter_app1/reusable_widgets/reusable_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -277,8 +278,8 @@ class _WifiPageState extends State<WifiPage> {
                           color: Color(0xFFFFFFFF),
                           border: null,
                         ),
-                        child: reusabletextfield(
-                            "Introduce la contraseña", false, password),
+                        child: reusabletextfield("Introduce la contraseña",
+                            false, password, validatePass),
                       ),
                     ),
                     Container(

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app1/reusable_widgets/functions_data.dart';
 import 'package:flutter_app1/reusable_widgets/reusable_widget.dart';
 import 'package:flutter_app1/screens/auth/forgot_pass_screen.dart';
 import 'package:flutter_app1/screens/auth/singin_screen.dart';
@@ -233,8 +234,8 @@ class _Sing_up_pageState extends State<Sing_up_page> {
                           color: Color(0xFFFFFFFF),
                           border: null,
                         ),
-                        child: reusabletextfield(
-                            "Nombre", false, name_text_controller),
+                        child: reusabletextfield("Nombre", false,
+                            name_text_controller, validateName),
                       ),
                     ),
                     Container(
@@ -274,8 +275,8 @@ class _Sing_up_pageState extends State<Sing_up_page> {
                           color: Color(0xFFFFFFFF),
                           border: null,
                         ),
-                        child: reusabletextfield(
-                            "Email", false, email_text_Controller),
+                        child: reusabletextfield("Email", false,
+                            email_text_Controller, validateEmail),
                       ),
                     ),
                     Container(
@@ -315,8 +316,8 @@ class _Sing_up_pageState extends State<Sing_up_page> {
                           color: Color(0xFFFFFFFF),
                           border: null,
                         ),
-                        child: reusabletextfield(
-                            "Contraseña", true, password_text_controller),
+                        child: reusabletextfield("Contraseña", true,
+                            password_text_controller, validatePass),
                       ),
                     ),
                     Container(
@@ -357,7 +358,7 @@ class _Sing_up_pageState extends State<Sing_up_page> {
                           border: null,
                         ),
                         child: reusabletextfield("Repite la contraseña", true,
-                            passwordconfirm_text_Controller),
+                            passwordconfirm_text_Controller, validatePass),
                       ),
                     ),
                     Container(
