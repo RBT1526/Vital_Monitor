@@ -131,7 +131,7 @@ Serial.println("RADIO OK");
 
 
 void init_htu () {
-    while (ht2x.begin() != true) //reset sensor, set heater off, set resolution, check power (sensor doesn't operate correctly if VDD < +2.25v)
+    if (ht2x.begin() != true) //reset sensor, set heater off, set resolution, check power (sensor doesn't operate correctly if VDD < +2.25v)
   {
     Serial.println("HTU21D not connected"); //(F()) save string to flash & keeps dynamic memory free
 

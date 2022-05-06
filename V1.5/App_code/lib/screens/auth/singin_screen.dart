@@ -21,35 +21,40 @@ class _SignInscreenState extends State<SignInscreen> {
   final GlobalKey<FormState> _key = GlobalKey<FormState>();
   TextEditingController password_text_controller = TextEditingController();
   TextEditingController email_text_Controller = TextEditingController();
-
+  String errorMessage = '';
   void singin_func() async {
     if (_key.currentState!.validate()) {
-      await auth
-          .signInWithEmailAndPassword(
-              email: email_text_Controller.text,
-              password: password_text_controller.text)
-          .then((value) async {
-        final database = FirebaseDatabase.instance.ref();
+      try {
+        await auth
+            .signInWithEmailAndPassword(
+                email: email_text_Controller.text,
+                password: password_text_controller.text)
+            .then((value) async {
+          final database = FirebaseDatabase.instance.ref();
 
-        final user = await auth.currentUser;
-        final uid = user?.uid;
-        final udatabase =
-            database.child("VitalMonitor").child(uid.toString()).child("Dir");
-        await udatabase.get().then((value) {
-          String? _Dir = value.value.toString();
-          if (_Dir == "False") {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => start_conf_hub()));
-          } else {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (context) => home_page()));
-          }
+          final user = await auth.currentUser;
+          final uid = user?.uid;
+          errorMessage = '';
+          final udatabase =
+              database.child("VitalMonitor").child(uid.toString()).child("Dir");
+          await udatabase.get().then((value) {
+            String? _Dir = value.value.toString();
+            if (_Dir == "False") {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => start_conf_hub()));
+            } else {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => home_page()));
+            }
+          }).onError((error, stackTrace) {
+            print("Error ${error.toString()}");
+          });
         }).onError((error, stackTrace) {
           print("Error ${error.toString()}");
         });
-      }).onError((error, stackTrace) {
-        print("Error ${error.toString()}");
-      });
+      } on FirebaseAuthException catch (error) {
+        errorMessage = error.message!;
+      }
     }
   }
 
@@ -269,6 +274,9 @@ class _SignInscreenState extends State<SignInscreen> {
                 child: reusabletextfield(
                     "Contraseña", true, password_text_controller, validatePass),
               ),
+            ),
+            Center(
+              child: Text(errorMessage),
             ),
             Container(
               margin: const EdgeInsets.only(

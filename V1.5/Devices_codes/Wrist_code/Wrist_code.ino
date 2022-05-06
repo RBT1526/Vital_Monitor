@@ -75,7 +75,6 @@ void setup() {
   //starting the temperature sensor
   if (!htu.begin(0x40)) {//i2c communication begins
     Serial.println("Couldn't find sensor!");//if it dosen't find the sensor
-    while (1);
   }
  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  if (!nrf24.init())
@@ -278,6 +277,7 @@ void button_function(int delaytime, int mode, int individualmode ) { //request a
 //---------------------------------------------------------------------------
 //function to get data
 void get_data() { 
+  particleSensor.off();
   button_function(200, 0, 1); // Start the start button for 200 miliseconds
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   while (data.substring(9, 12) != "err") { // wait until the proccess finis
