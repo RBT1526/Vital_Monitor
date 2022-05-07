@@ -26,8 +26,7 @@ WebsocketsClient client;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(4,INPUT);
-pinMode(33,OUTPUT);
+  pinMode(4,OUTPUT);
 
   Serial.setDebugOutput(true);
   Serial.println();
@@ -96,12 +95,6 @@ pinMode(33,OUTPUT);
 }
 
 void loop() {
-  if(digitalRead(4)){
-  digitalWrite(33,LOW);
-}
-else{
-  digitalWrite(33,HIGH);
-}
 
   camera_fb_t *fb = esp_camera_fb_get();
   if(!fb){

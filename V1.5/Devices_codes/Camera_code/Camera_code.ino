@@ -3,38 +3,63 @@
 #include <ArduinoWebsockets.h>
 #include <EEPROM.h>
 
-#define CAMERA_MODEL_AI_THINKER
+const byte button = 12;
+const byte light  = 4;
 
+String ssid = "";
+String pass = ""; 
+String e_ssid = "";
+String e_pass = ""; 
+
+long actual_time;
+bool Button_mark = false;
+
+#define CAMERA_MODEL_AI_THINKER
 #include "camera_pins.h"
 
 const char* websocket_server_host = "20.94.218.189";
 const uint16_t websocket_server_port = 65080;
-
 using namespace websockets;
 WebsocketsClient client;
-String ssid = "";
-String pass = ""; 
 
-String e_ssid = "";
-String e_pass = ""; 
-long actual_time;
-bool Button_mark = false;
-const byte button = 4;
-long actual_time_led;
-bool indicator = false;
-void blink_led(int interval){
-    if((millis()-actual_time_led)>= interval){
-    if(indicator){
-    digitalWrite(33,LOW);
-    indicator = false;
-    }
-    else{
-        digitalWrite(33,HIGH);
-        indicator = true;
-    }
 
-    }
 
+void Configure_wifi(){
+Serial.println("--------------------- Configuration mode --------------------");
+ WiFi.mode(WIFI_STA);
+  WiFi.beginSmartConfig();
+  Serial.println("Waiting for SmartConfig.");
+  digitalWrite(light,HIGH);
+  while (!WiFi.smartConfigDone()) {
+    delay(500);
+    Serial.print(".");
+  }
+    digitalWrite(light,LOW);
+  Serial.println("");
+  Serial.println("SmartConfig done.");
+  Serial.println("Waiting for WiFi");
+  actual_time = millis();
+  while (WiFi.status() != WL_CONNECTED) {
+     digitalWrite(light, HIGH);
+    delay(950);
+    digitalWrite(light, LOW);
+    delay(950);
+    Serial.print(".");
+    bool check = check_for_button();
+    if(check)
+    erase_eeprom(); 
+  }
+  Serial.println("WiFi Connected.");
+  ssid = WiFi.SSID();
+    pass = WiFi.psk();
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+  Serial.println("Sending values to eeprom....");
+writeStringToFlash(ssid, 0); // storing ssid at address 0
+writeStringToFlash(pass, 50); // storing pss at address 40
+Serial.println("Values sended");
+Serial.println("--------------------- Configuration Finished --------------------");
+  
 }
 void writeStringToFlash(String a,int addr ) { // it want an address and the string to write
   int len = a.length(); // get the string lenght
@@ -62,69 +87,6 @@ String readStringFromFlash(int addr) { // it want the address
   }
   return strreading; // return the final string
 }
-void Configure_wifi(){
-Serial.println("--------------------- Configuration mode --------------------");
- WiFi.mode(WIFI_STA);
-  WiFi.beginSmartConfig();
-  Serial.println("Waiting for SmartConfig.");
-  actual_time_led = millis();
-  while (!WiFi.smartConfigDone()) {
-    delay(500);
-    Serial.print(".");
-    blink_led(500);
-  }
-  Serial.println("");
-  Serial.println("SmartConfig done.");
-  Serial.println("Waiting for WiFi");
-  actual_time = millis();
-  actual_time_led = millis();
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-    blink_led(1000);
-    bool check = check_for_button();
-    if(check)
-    erase_eeprom(); 
-  }
-  Serial.println("WiFi Connected.");
-  ssid = WiFi.SSID();
-    pass = WiFi.psk();
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
-  Serial.println("Sending values to eeprom....");
-writeStringToFlash(ssid, 0); // storing ssid at address 0
-writeStringToFlash(pass, 50); // storing pss at address 40
-Serial.println("Values sended");
-Serial.println("--------------------- Configuration Finished --------------------");
-  
-}
-void erase_eeprom(){
-    Serial.println("ERASING EEPROM......");
- writeStringToFlash("", 0); // storing ssid at address 0
-  writeStringToFlash("", 50);
-  Serial.println("EEPROM ERASED");
-  ESP.restart();
-}
-bool check_for_button(){
-    if((millis()-actual_time) >= 5000 && Button_mark){
-        actual_time = millis();
-       Button_mark= false;
-        return true;
-    }
-    else{
-    if(digitalRead(4) && !Button_mark){
-        actual_time = millis();
-        Button_mark = true;
-        
-    }
-    else if(!digitalRead(4)){
-        actual_time = millis();
-        Button_mark = false;
-        
-    }
-    return false;
-    }
-}
 void check_for_connection () {
 
 Serial.println("-------------Starting connection try---------");
@@ -139,31 +101,66 @@ if(e_ssid ==  "" || e_pass == ""){
     Configure_wifi();
 }
 else{
-
     WiFi.begin(e_ssid.c_str(), e_pass.c_str());
     actual_time = millis();
-    actual_time_led = millis();
     while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-     blink_led(1000);
-    Serial.print(".");
+    digitalWrite(light, HIGH);
     bool check = check_for_button();
+    delay(950);
+    check = check_for_button();
+    digitalWrite(light, LOW);
+    check = check_for_button();
+    delay(950);
+    Serial.print(".");
+    check = check_for_button();
     if(check)
     erase_eeprom();
   }
  Serial.println("-------------Connection finished succesfully---------"); 
-
-  
-
-
 }
 }
+
+
+
+bool check_for_button(){
+    if((millis()-actual_time) >= 5000 && Button_mark){
+        actual_time = millis();
+       Button_mark= false;
+        return true;
+    }
+    else{
+    if(digitalRead(button) && !Button_mark){
+        actual_time = millis();
+        Button_mark = true;
+        
+    }
+    else if(!digitalRead(button)){
+        actual_time = millis();
+        Button_mark = false;
+        
+    }
+    return false;
+    }
+}
+
+void erase_eeprom(){
+    Serial.println("ERASING EEPROM......");
+ writeStringToFlash("", 0); // storing ssid at address 0
+  writeStringToFlash("", 50);
+  Serial.println("EEPROM ERASED");
+  ESP.restart();
+}
+
+
 
 void setup() {
   Serial.begin(115200);
-    EEPROM.begin(512); 
-  pinMode(4,INPUT);
-pinMode(33,OUTPUT);
+  EEPROM.begin(512); 
+  pinMode(light,OUTPUT);
+pinMode(button,INPUT);
+
+
+
   Serial.setDebugOutput(true);
   Serial.println();
   camera_config_t config;
@@ -187,7 +184,6 @@ pinMode(33,OUTPUT);
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 10000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  //init with high specs to pre-allocate larger buffers
   if(psramFound()){
     config.frame_size = FRAMESIZE_VGA;
     config.jpeg_quality = 40;
@@ -197,45 +193,41 @@ pinMode(33,OUTPUT);
     config.jpeg_quality = 12;
     config.fb_count = 1;
   }
-
-
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
     Serial.printf("Camera init failed with error 0x%x", err);
-    ESP.restart();
     return;
   }
-digitalWrite(33,LOW);
-delay(3000);
-digitalWrite(33,HIGH);
-check_for_connection();
+  digitalWrite(light,HIGH);
+  delay(2000);
+  digitalWrite(light,LOW);
+delay(2000);
+
+actual_time = millis();
+  check_for_connection();
  
+
 
   while(!client.connect(websocket_server_host, websocket_server_port, "/")){
     delay(500);
     Serial.print(".");
   }
  
- digitalWrite(33,LOW);
-
-delay(3000);
-digitalWrite(33,HIGH);
  actual_time = millis();
 }
 
 void loop() {
 bool check = check_for_button();
+//bool check = false;
 if(check){
   Serial.println("PRESSED");
-  digitalWrite(33,LOW);
   erase_eeprom();
   }
- 
+
 
   camera_fb_t *fb = esp_camera_fb_get();
   if(!fb){
-    Serial.println("Camera capture failed");
-    
+    Serial.println("Camera capture failed");    
     esp_camera_fb_return(fb);
     return;
   }
@@ -247,5 +239,4 @@ if(check){
 
   client.sendBinary((const char*) fb->buf, fb->len);
   esp_camera_fb_return(fb);
-
 }
