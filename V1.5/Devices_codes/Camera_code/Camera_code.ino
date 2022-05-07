@@ -3,8 +3,8 @@
 #include <ArduinoWebsockets.h>
 #include <EEPROM.h>
 
-const byte button = 12;
-const byte light  = 4;
+const byte button = 4;
+const byte light  = 12;
 
 String ssid = "";
 String pass = ""; 
