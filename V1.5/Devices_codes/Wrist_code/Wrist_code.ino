@@ -35,11 +35,11 @@ byte rates[RATE_SIZE]; //Array of heart rates
 byte rateSpot = 0; //to locate a rate on the array
 long lastBeat = 0; //Time at which the last beat occurred
 float beatsPerMinute = 0; //operation to get the bpm
-String datos = "bOsO"; //final spo2 and bpm data string
+String datos = "ObOs"; //final spo2 and bpm data string
 unsigned long tiempo = 0; //variable for time comparation
 unsigned long tempo = 0; //variable for time comparation
 bool tempos = false;
-String temperature = "tOf";//declare the temperature variable
+String temperature = "t0f";//declare the temperature variable
 const int start = 2;  //declare the variable for the start button
 const int memory = 3;  //start is a cable on pin 10 to a transistor conected to the buttons, same with memory
 String data = "";  //variable to save the data of the serial communication

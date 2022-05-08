@@ -19,9 +19,12 @@ class _vital_sign_screenState extends State<vital_sign_screen> {
   String Spo2_text = "0";
   String Bpm_text = "0";
   String Temp_text = "0";
+  String spo2_announce = "N/A";
+  String Bpm_announce = "N/A";
+  String Temp_announce = "N/A";
   final FirebaseAuth auth = FirebaseAuth.instance;
   final database = FirebaseDatabase.instance.ref();
-  late StreamSubscription _streaming;
+  late StreamSubscription _vitalsignsub;
   @override
   void initState() {
     super.initState();
@@ -38,22 +41,51 @@ class _vital_sign_screenState extends State<vital_sign_screen> {
   void get_values() async {
     final user = await auth.currentUser;
     final uid = user?.uid;
+    print(uid);
 
-    _streaming = database
+    _vitalsignsub = database
         .child("VitalMonitor")
         .child(uid.toString())
         .child("Data")
-        .onValue
+        .limitToLast(1)
+        .onChildAdded
         .listen((event) {
       final data = Map<String, dynamic>.from(event.snapshot.value as dynamic);
-      final _spo2 = data["SPO2"];
-      final _bpm = data["BPM"];
+      print(data);
+      String _spo2 = "0";
+      String _spo2_t = "N/A";
+      String _bpm = "0";
+      String _bpm_t = "N/A";
+      if (data["Spo2"] == "O") {
+        _spo2 = "0";
+        _spo2_t = "N/A";
+      } else if (data["Spo2"] == "A") {
+        _spo2 = "100";
+        _spo2_t = "...";
+      } else {
+        _spo2 = data["Spo2"];
+        _spo2_t = data["Spo2"];
+      }
+      if (data["Bpm"] == "O") {
+        _bpm = "0";
+        _bpm_t = "N/A";
+      } else if (data["Bpm"] == "A") {
+        _bpm = "100";
+        _bpm_t = "...";
+      } else {
+        _bpm = data["Bpm"];
+        _bpm_t = data["Bpm"];
+      }
+
       final _Temp = data["Temp"];
 
       setState(() {
         Spo2_text = _spo2;
         Bpm_text = _bpm;
         Temp_text = _Temp;
+        spo2_announce = _spo2_t;
+        Bpm_announce = _bpm_t;
+        Temp_announce = _Temp;
       });
     });
   }
@@ -151,7 +183,7 @@ class _vital_sign_screenState extends State<vital_sign_screen> {
                         children: <Widget>[
                           Text('Spo2'),
                           Text(
-                            '${int.parse(Spo2_text)}',
+                            '${spo2_announce}',
                             style: TextStyle(
                                 fontSize: 50, fontWeight: FontWeight.bold),
                           ),
@@ -177,7 +209,7 @@ class _vital_sign_screenState extends State<vital_sign_screen> {
                         children: <Widget>[
                           Text('Bpm'),
                           Text(
-                            '${int.parse(Bpm_text)}',
+                            '${Bpm_announce}',
                             style: TextStyle(
                                 fontSize: 50, fontWeight: FontWeight.bold),
                           ),
@@ -198,7 +230,7 @@ class _vital_sign_screenState extends State<vital_sign_screen> {
                         children: <Widget>[
                           Text('Temperatura'),
                           Text(
-                            '${double.parse(Temp_text)}',
+                            '${Temp_announce}',
                             style: TextStyle(
                                 fontSize: 50, fontWeight: FontWeight.bold),
                           ),
@@ -218,9 +250,8 @@ class _vital_sign_screenState extends State<vital_sign_screen> {
 
   @override
   void deactivate() {
-    _streaming.cancel();
+    _vitalsignsub.cancel();
     print("cancelando");
-
     super.deactivate();
   }
 }
