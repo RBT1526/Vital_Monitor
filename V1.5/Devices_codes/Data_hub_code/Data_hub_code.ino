@@ -51,6 +51,8 @@ String diastolic = "";
 String systolic = "";
 String data_sys_dia_msj = "";
 
+bool sdflag = false;
+
 unsigned long sendDataPrevMillis = 0;
 volatile bool dataChanged = false;
 
@@ -441,6 +443,7 @@ json.set("Dia","");
     }else{
     json.set("Dia",diastolic);
   json.set("Sys",systolic);
+  sdflag = true;
     }
   diastolic = "";
   systolic = "";
@@ -505,6 +508,7 @@ void format_pressure_data(){
     systolic = data_sys_dia_msj.substring((pos+1), pos1);
     pos = data_sys_dia_msj.indexOf("h");
     diastolic = data_sys_dia_msj.substring((pos1 + 1), pos);
+    
     data_sys_dia_msj = "";
 }
 bool get_dia_sys(){
@@ -673,7 +677,20 @@ void loop()
   if(Firebase.ready() && msj != "" && (millis() - sendDataPrevMillis > 1000 || sendDataPrevMillis == 0)){
   json_form(msj);
   sendDataPrevMillis = millis();
-  Serial.printf("Send json... %s\n", Firebase.RTDB.pushJSON(&fbdo, "/VitalMonitor/"+token+"/Data", &json) ? "ok" : fbdo.errorReason().c_str());
+  Serial.print("Send json...");
+  if(Firebase.RTDB.pushJSON(&fbdo, "/VitalMonitor/"+token+"/Data", &json)){
+    Serial.println("ok");
+    if(sdflag){
+    String pathofdata = String(fbdo.pushName());
+    Serial.println(pathofdata);
+    Serial.printf("Send json... %s\n", Firebase.RTDB.setStringAsync(&fbdo, "/VitalMonitor/"+token+"/Lval", pathofdata) ? "ok" : fbdo.errorReason().c_str());
+    sdflag = false;
+  }
+  }
+  else{
+    Serial.println(fbdo.errorReason().c_str());
+  }
+  
   Serial.println(json.raw());
   }
   
@@ -701,6 +718,8 @@ void loop()
     if(data_value == "True"){
       bool data_get = get_dia_sys();
       if(data_get){
+     
+          
       Serial.println("finished_data_sys");
       }
       else{

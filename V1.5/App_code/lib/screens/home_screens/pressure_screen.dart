@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -41,19 +40,36 @@ class _pressure_screenState extends State<pressure_screen> {
   }
 
   void get_values() async {
+    String _dia = "0";
+    String _sys = "0";
+    String _dat = "0";
     final user = await auth.currentUser;
     final uid = user?.uid;
 
     _streaming = database
         .child("VitalMonitor")
         .child(uid.toString())
-        .child("Data")
+        .child("Lval")
         .onValue
-        .listen((event) {
-      final data = Map<String, dynamic>.from(event.snapshot.value as dynamic);
-      final _dia = data["Dia"];
-      final _sys = data["Sys"];
-      final _dat = data["date"];
+        .listen((event) async {
+      final data = event.snapshot.value;
+      print(data);
+      final snapshot = await database
+          .child("VitalMonitor")
+          .child(uid.toString())
+          .child("Data")
+          .child(data.toString())
+          .get();
+      if (snapshot.exists) {
+        final final_vald = Map<String, dynamic>.from(snapshot.value as dynamic);
+        _dia = final_vald["Dia"];
+        _sys = final_vald["Sys"];
+        _dat = final_vald["Date"];
+      } else {
+        _dia = "0";
+        _sys = "0";
+        _dat = "0";
+      }
 
       setState(() {
         Dia_last = _dia;
