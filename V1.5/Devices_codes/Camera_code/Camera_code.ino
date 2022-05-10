@@ -227,13 +227,14 @@ if(check){
 
   camera_fb_t *fb = esp_camera_fb_get();
   if(!fb){
-    Serial.println("Camera capture failed");    
-    esp_camera_fb_return(fb);
+    Serial.println("Camera capture failed"); 
+    ESP.restart();
     return;
   }
 
   if(fb->format != PIXFORMAT_JPEG){
     Serial.println("Non-JPEG data not implemented");
+    ESP.restart();
     return;
   }
 

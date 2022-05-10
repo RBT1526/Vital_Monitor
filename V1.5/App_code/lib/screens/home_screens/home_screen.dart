@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app1/screens/home_screens/Camera_screen.dart';
+import 'package:flutter_app1/screens/home_screens/Iot_screen.dart';
 import 'package:flutter_app1/screens/home_screens/pressure_screen.dart';
 import 'package:flutter_app1/screens/home_screens/vital_sign_screen.dart';
 import 'dart:io';
@@ -383,6 +384,12 @@ class _home_pageState extends State<home_page> {
                             ),
                           ),
                           GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => Iot_screen()));
+                            },
                             child: Container(
                               margin: EdgeInsets.zero,
                               padding: EdgeInsets.zero,
