@@ -36,22 +36,20 @@ class _Sing_up_pageState extends State<Sing_up_page> {
       final uid = user?.uid;
       final sing_up_data = <String, dynamic>{
         uid.toString(): {
-          "Dir": "False",
-          "Data": {
-            "BPM": "0",
-            "Dis": "0",
-            "SPO2": "0",
-            "Sys": "200",
-            "Temp": "0",
-            "date": "0"
-          },
+          "Data": "False",
           "Iot": {"Press": "False", "Switch": "False", "Cam": "False"},
-          "User": {"name": name_text_controller.text}
+          "User": {"name": name_text_controller.text},
+          "Lval": "False"
         }
       };
-      await vdatabase.update(sing_up_data).then((value) {
-        Navigator.push(
-            context, MaterialPageRoute(builder: (context) => SignInscreen()));
+      await vdatabase.update(sing_up_data).then((value) async {
+        final tokens_data = <String, dynamic>{
+          uid.toString(): {"Conf": "D", "Dir": "False", "Wifidir": "False"}
+        };
+        await vdatabase.child("Tokens").update(tokens_data).then((value) {
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => SignInscreen()));
+        });
       }).onError((error, stackTrace) {
         print("Error ${error.toString()}");
       });

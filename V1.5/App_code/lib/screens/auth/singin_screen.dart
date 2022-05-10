@@ -35,8 +35,11 @@ class _SignInscreenState extends State<SignInscreen> {
           final user = await auth.currentUser;
           final uid = user?.uid;
           errorMessage = '';
-          final udatabase =
-              database.child("VitalMonitor").child(uid.toString()).child("Dir");
+          final udatabase = database
+              .child("VitalMonitor")
+              .child("Tokens")
+              .child(uid.toString())
+              .child("Dir");
           await udatabase.get().then((value) {
             String? _Dir = value.value.toString();
             if (_Dir == "False") {

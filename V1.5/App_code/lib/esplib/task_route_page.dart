@@ -31,26 +31,23 @@ class TaskRouteState extends State<TaskRoute> {
     final Dir_data = result.ip.toString() + result.bssid.toString();
     final user = await auth.currentUser;
     final uid = user?.uid;
-    final udatabase = database.child("VitalMonitor").child(uid.toString());
-    await udatabase.child("Dir").get().then((value) async {
+    final udatabase =
+        database.child("VitalMonitor").child("Tokens").child(uid.toString());
+    await udatabase.child("Conf").get().then((value) async {
       String? _Dir = value.value.toString();
-      if (_Dir == "False") {
+      if (_Dir == "D") {
         udatabase.update({"Dir": Dir_data});
       } else {
-        await udatabase.child("Iot").child("Switch").get().then((value) {
-          String? _Switch = value.value.toString();
-          if (_Switch == "False") {
-            udatabase.child("Iot").update({"Switch": Dir_data});
-          } else {
-            udatabase.child("Iot").update({"Cam": "True"});
-          }
-        }).onError((error, stackTrace) {
-          print("Error ${error.toString()}");
-        });
-        udatabase.child("Iot").update({"Switch": Dir_data});
+        if (_Dir == "S") {
+          udatabase.update({"Wifidir": Dir_data});
+        } else {
+          database
+              .child("VitalMonitor")
+              .child(uid.toString())
+              .child("Iot")
+              .update({"Cam": "True"});
+        }
       }
-    }).onError((error, stackTrace) {
-      print("Error ${error.toString()}");
     });
   }
 
