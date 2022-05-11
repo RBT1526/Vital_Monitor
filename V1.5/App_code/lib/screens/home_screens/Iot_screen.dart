@@ -163,7 +163,7 @@ class _Iot_screenState extends State<Iot_screen> {
         print("Error ${error.toString()}");
       });
     } else {
-      print("configurar");
+      configure();
     }
   }
 
@@ -598,7 +598,7 @@ class _Iot_screenState extends State<Iot_screen> {
                                 ),
                                 onPressed: buttonactive
                                     ? () async {
-                                        configure();
+                                        donoting();
                                       }
                                     : null,
                                 child: Text("Configurar"),

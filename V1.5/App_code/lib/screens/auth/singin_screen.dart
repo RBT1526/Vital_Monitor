@@ -166,21 +166,9 @@ class _SignInscreenState extends State<SignInscreen> {
                   bottom: 40,
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(r'''Bienvenido''',
-                        style: GoogleFonts.poppins(
-                          textStyle: TextStyle(
-                            color: const Color(0xFF000000),
-                            fontWeight: FontWeight.w400,
-                            fontSize: 28,
-                            fontStyle: FontStyle.normal,
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                        textAlign: TextAlign.left,
-                        maxLines: 1),
-                    Text(r'''Empieza a monitorear''',
                         style: GoogleFonts.poppins(
                           textStyle: TextStyle(
                             color: const Color(0xFF000000),

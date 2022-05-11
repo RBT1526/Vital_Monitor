@@ -168,19 +168,7 @@ class _Sing_up_pageState extends State<Sing_up_page> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(r''' Empieza a utilizar''',
-                              style: GoogleFonts.outfit(
-                                textStyle: TextStyle(
-                                  color: const Color(0xFF000000),
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 28,
-                                  fontStyle: FontStyle.normal,
-                                  decoration: TextDecoration.none,
-                                ),
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 1),
-                          Text(r'''VitalMonitor ahora.''',
+                          Text(r''' ALTA DE USUARIO''',
                               style: GoogleFonts.outfit(
                                 textStyle: TextStyle(
                                   color: const Color(0xFF000000),
