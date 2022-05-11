@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app1/screens/New_data_hub/Start_connect_data_hub.dart';
 import 'package:flutter_app1/screens/auth/welcome_screen.dart';
 import 'package:flutter_app1/screens/home_screens/Camera_screen.dart';
 import 'package:flutter_app1/screens/home_screens/Iot_screen.dart';
@@ -10,6 +12,7 @@ import 'dart:io';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 
 class home_page extends StatefulWidget {
   const home_page({Key? key}) : super(key: key);
@@ -19,6 +22,10 @@ class home_page extends StatefulWidget {
 }
 
 class _home_pageState extends State<home_page> {
+  var imageUrl = "http://20.120.242.95:65080/?user=";
+  bool downloading = true;
+  String downloadingStr = "No data";
+  String savePath = "";
   final FirebaseAuth auth = FirebaseAuth.instance;
   final database = FirebaseDatabase.instance.ref();
   bool buttonactive = true;
@@ -66,6 +73,53 @@ class _home_pageState extends State<home_page> {
   @override
   void initState() {
     super.initState();
+  }
+
+  Future downloadFile() async {
+    final user = await auth.currentUser;
+    final uid = user?.uid;
+
+    imageUrl = imageUrl + uid.toString();
+    try {
+      Dio dio = Dio();
+
+      String fileName = "reporte.xlsx";
+
+      savePath = await getFilePath(fileName);
+      await dio.download(imageUrl, savePath, onReceiveProgress: (rec, total) {
+        setState(() {
+          downloading = true;
+          // download = (rec / total) * 100;
+          downloadingStr = "Downloading Image : $rec";
+          print(downloadingStr);
+        });
+      });
+      setState(() async {
+        downloading = false;
+        downloadingStr = "Completed";
+        print(downloadingStr);
+        print(savePath);
+        await showDialog(
+          context: context,
+          builder: (context) => new AlertDialog(
+            title: new Text('Reporte guardado en '),
+            content: new Text(savePath),
+          ),
+        );
+      });
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  Future<String> getFilePath(uniqueFileName) async {
+    String path = '';
+
+    Directory dir = await getApplicationDocumentsDirectory();
+
+    path = '${dir.path}/$uniqueFileName';
+
+    return path;
   }
 
   @override
@@ -392,11 +446,44 @@ class _home_pageState extends State<home_page> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => cam_screen()));
+                          onTap: () async {
+                            final user = await auth.currentUser;
+                            final uid = user?.uid;
+                            final snapshot = await database
+                                .child("VitalMonitor")
+                                .child(uid.toString())
+                                .child("Iot")
+                                .child("Cam")
+                                .get();
+                            if (snapshot.exists) {
+                              final final_vald = snapshot.value;
+                              if (final_vald != "False") {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => cam_screen()));
+                              } else {
+                                final vdatabase = database
+                                    .child("VitalMonitor")
+                                    .child("Tokens")
+                                    .child(uid.toString());
+                                final sing_up_data = <String, dynamic>{
+                                  "Conf": "C",
+                                };
+                                await vdatabase
+                                    .update(sing_up_data)
+                                    .then((value) {
+                                  print("value");
+                                }).onError((error, stackTrace) {
+                                  print("Error ${error.toString()}");
+                                });
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            start_conf_hub()));
+                              }
+                            }
                           },
                           child: Container(
                             margin: EdgeInsets.zero,
@@ -535,6 +622,9 @@ class _home_pageState extends State<home_page> {
                     ),
                     child: Center(
                       child: GestureDetector(
+                        onTap: () {
+                          downloadFile();
+                        },
                         child: Container(
                           margin: EdgeInsets.zero,
                           padding: EdgeInsets.zero,

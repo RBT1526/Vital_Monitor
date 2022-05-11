@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app1/reusable_widgets/CircleProgress.dart';
+import 'package:flutter_app1/screens/New_data_hub/Start_connect_data_hub.dart';
 import 'package:flutter_app1/screens/home_screens/home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -179,6 +180,25 @@ class _Iot_screenState extends State<Iot_screen> {
     }).onError((error, stackTrace) {
       print("Error ${error.toString()}");
     });
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => home_page()));
+  }
+
+  void configure() async {
+    final user = await auth.currentUser;
+    final uid = user?.uid;
+    final vdatabase =
+        database.child("VitalMonitor").child("Tokens").child(uid.toString());
+    final sing_up_data = <String, dynamic>{
+      "Conf": "S",
+    };
+    await vdatabase.update(sing_up_data).then((value) {
+      print("value");
+    }).onError((error, stackTrace) {
+      print("Error ${error.toString()}");
+    });
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => start_conf_hub()));
   }
 
   @override
@@ -578,7 +598,7 @@ class _Iot_screenState extends State<Iot_screen> {
                                 ),
                                 onPressed: buttonactive
                                     ? () async {
-                                        donoting();
+                                        configure();
                                       }
                                     : null,
                                 child: Text("Configurar"),

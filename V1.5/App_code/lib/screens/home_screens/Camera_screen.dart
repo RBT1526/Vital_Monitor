@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app1/screens/home_screens/home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,6 +14,8 @@ class cam_screen extends StatefulWidget {
 }
 
 class _cam_screenState extends State<cam_screen> {
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final database = FirebaseDatabase.instance.ref();
   Future<bool> _onWillPop() async {
     deactivate();
     Navigator.push(
@@ -84,7 +88,26 @@ class _cam_screenState extends State<cam_screen> {
                       style: ElevatedButton.styleFrom(
                         onSurface: Colors.blue,
                       ),
-                      onPressed: () {},
+                      onPressed: () async {
+                        final user = await auth.currentUser;
+                        final uid = user?.uid;
+                        final vdatabase = database
+                            .child("VitalMonitor")
+                            .child(uid.toString())
+                            .child("Iot");
+                        final sing_up_data = <String, dynamic>{
+                          "Cam": "False",
+                        };
+                        await vdatabase.update(sing_up_data).then((value) {
+                          print("value");
+                        }).onError((error, stackTrace) {
+                          print("Error ${error.toString()}");
+                        });
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => home_page()));
+                      },
                       child: Text("Eliminar dispositivo"),
                     ),
                   ]),
