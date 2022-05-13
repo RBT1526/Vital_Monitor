@@ -11,6 +11,8 @@ import openpyxl
 
 app = Flask(__name__)
 
+
+
 @app.route('/', methods=['GET'])
 def home_page():
     data = {'Page': 'Home', 'Message': 'All ok', 'Timestamp': str(time.time())}
@@ -22,6 +24,19 @@ def home_page():
 
 @app.route('/reporte/', methods=['GET', 'POST'])
 def makereport():
+    config = {
+  "apiKey": "AIzaSyCKOZaxb6cXjfSdCu8hDgRz59NDJ8hx14Q",
+  "authDomain": "medicproyect-d2db9.firebaseapp.com",
+  "databaseURL": "https://medicproyect-d2db9-default-rtdb.firebaseio.com",
+  "projectId": "medicproyect-d2db9",
+  "storageBucket": "medicproyect-d2db9.appspot.com",
+  "messagingSenderId": "22664224405",
+  "appId": "1:22664224405:web:a2675796eb49a6393f459c"
+}
+    firebase = pyrebase.initialize_app(config)
+    auth = firebase.auth()
+    user = auth.sign_in_with_email_and_password("devices@gmail.com", "gerardo02")
+    db = firebase.database()
     folderSavePath = "/home/gergames01/api/datos/"
     print(folderSavePath)
 
@@ -53,17 +68,5 @@ def makereport():
 
 
 if __name__ == '__main__':
-    config = {
-  "apiKey": "AIzaSyCKOZaxb6cXjfSdCu8hDgRz59NDJ8hx14Q",
-  "authDomain": "medicproyect-d2db9.firebaseapp.com",
-  "databaseURL": "https://medicproyect-d2db9-default-rtdb.firebaseio.com",
-  "projectId": "medicproyect-d2db9",
-  "storageBucket": "medicproyect-d2db9.appspot.com",
-  "messagingSenderId": "22664224405",
-  "appId": "1:22664224405:web:a2675796eb49a6393f459c"
-}
-    firebase = pyrebase.initialize_app(config)
-    auth = firebase.auth()
-    user = auth.sign_in_with_email_and_password("devices@gmail.com", "gerardo02")
-    db = firebase.database()
+    
     app.run(port=65080,host = "0.0.0.0")
