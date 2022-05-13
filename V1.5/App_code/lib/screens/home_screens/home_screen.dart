@@ -100,13 +100,6 @@ class _home_pageState extends State<home_page> {
     final uid = user?.uid;
 
     imageUrl = imageUrl + uid.toString();
-    await showDialog(
-      context: context,
-      builder: (context) => new AlertDialog(
-        title: new Text('Reporte guardado en '),
-        content: new Text(imageUrl),
-      ),
-    );
     try {
       Map<Permission, PermissionStatus> statuses = await [
         Permission.storage,

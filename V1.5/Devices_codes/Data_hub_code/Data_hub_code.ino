@@ -646,6 +646,9 @@ void setup()
  pinMode(button,INPUT);
 Serial.println("Reset button OK");
 //Configure_wifi();
+if(digitalRead(button)){
+  erase_eeprom();
+}
 check_for_connection();
 configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   Serial.println(Get_time());
