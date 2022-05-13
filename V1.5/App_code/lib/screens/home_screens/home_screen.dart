@@ -186,6 +186,32 @@ class _home_pageState extends State<home_page> {
           ),
           backgroundColor: const Color(0xFF000000),
           body: Center(
+              child: Container(
+            margin: EdgeInsets.zero,
+            padding: EdgeInsets.zero,
+            width: double.maxFinite,
+            height: double.maxFinite,
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFFFFF),
+              border: Border(
+                left: BorderSide(
+                    width: 0,
+                    style: BorderStyle.none,
+                    color: Color(0xFF000000)),
+                top: BorderSide(
+                    width: 0,
+                    style: BorderStyle.none,
+                    color: Color(0xFF000000)),
+                right: BorderSide(
+                    width: 0,
+                    style: BorderStyle.none,
+                    color: Color(0xFF000000)),
+                bottom: BorderSide(
+                    width: 0,
+                    style: BorderStyle.none,
+                    color: Color(0xFF000000)),
+              ),
+            ),
             child: SingleChildScrollView(
               child: Column(
                 children: [
@@ -679,7 +705,7 @@ class _home_pageState extends State<home_page> {
                 ],
               ),
             ),
-          ),
+          )),
         ));
   }
 }

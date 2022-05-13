@@ -67,6 +67,7 @@ class _Sing_up_pageState extends State<Sing_up_page> {
               margin: EdgeInsets.zero,
               padding: EdgeInsets.zero,
               width: double.maxFinite,
+              height: double.maxFinite,
               decoration: const BoxDecoration(
                 color: Color(0xFFFFFFFF),
                 border: Border(

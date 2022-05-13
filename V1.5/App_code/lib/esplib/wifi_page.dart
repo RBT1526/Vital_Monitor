@@ -1,7 +1,6 @@
 import 'package:esptouch_smartconfig/esp_touch_result.dart';
 import 'package:flutter_app1/esplib/task_route_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app1/reusable_widgets/functions_data.dart';
 import 'package:flutter_app1/reusable_widgets/reusable_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -278,8 +277,8 @@ class _WifiPageState extends State<WifiPage> {
                           color: Color(0xFFFFFFFF),
                           border: null,
                         ),
-                        child: reusabletextfield("Introduce la contraseña",
-                            false, password, validatePass),
+                        child: reusabletextfildforpass(
+                            "Introduce la contraseña", password),
                       ),
                     ),
                     Container(
@@ -340,4 +339,36 @@ class _WifiPageState extends State<WifiPage> {
                   ])))
         ]));
   }
+}
+
+TextFormField reusabletextfildforpass(
+    String text, TextEditingController controller) {
+  return TextFormField(
+    controller: controller,
+    obscureText: true,
+    cursorColor: Colors.black,
+    style: GoogleFonts.outfit(
+      textStyle: TextStyle(
+        color: const Color(0xFF000000),
+        fontWeight: FontWeight.w400,
+        fontSize: 16,
+        fontStyle: FontStyle.normal,
+        decoration: TextDecoration.none,
+      ),
+    ),
+    decoration: InputDecoration(
+      hintText: text,
+      border: OutlineInputBorder(),
+      enabledBorder: OutlineInputBorder(),
+      focusedBorder: OutlineInputBorder(),
+      contentPadding: const EdgeInsets.only(
+        left: 16,
+      ),
+    ),
+    keyboardType: TextInputType.visiblePassword,
+    textAlign: TextAlign.left,
+    maxLines: 1,
+    minLines: 1,
+    maxLength: null,
+  );
 }
