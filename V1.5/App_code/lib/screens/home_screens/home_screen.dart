@@ -13,6 +13,7 @@ import 'dart:io';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class home_page extends StatefulWidget {
   const home_page({Key? key}) : super(key: key);
@@ -22,7 +23,7 @@ class home_page extends StatefulWidget {
 }
 
 class _home_pageState extends State<home_page> {
-  var imageUrl = "http://20.120.242.95:65080/?user=";
+  var imageUrl = "http://20.120.242.95:65080/reporte/?user=";
   bool downloading = true;
   String downloadingStr = "No data";
   String savePath = "";
@@ -75,38 +76,74 @@ class _home_pageState extends State<home_page> {
     super.initState();
   }
 
+  Future<String?> getDownloadPath() async {
+    Directory? directory;
+    try {
+      if (Platform.isIOS) {
+        directory = await getApplicationDocumentsDirectory();
+      } else {
+        directory = Directory('/storage/emulated/0/Download');
+        // Put file in global download folder, if for an unknown reason it didn't exist, we fallback
+        // ignore: avoid_slow_async_io
+        if (!await directory.exists())
+          directory = await getExternalStorageDirectory();
+      }
+    } catch (err, stack) {
+      print("Cannot get download folder path");
+      return null;
+    }
+    return directory?.path;
+  }
+
   Future downloadFile() async {
     final user = await auth.currentUser;
     final uid = user?.uid;
 
     imageUrl = imageUrl + uid.toString();
+    await showDialog(
+      context: context,
+      builder: (context) => new AlertDialog(
+        title: new Text('Reporte guardado en '),
+        content: new Text(imageUrl),
+      ),
+    );
     try {
-      Dio dio = Dio();
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.storage,
+        //add more permission to request here.
+      ].request();
 
-      String fileName = "reporte.xlsx";
+      if (statuses[Permission.storage]!.isGranted) {
+        var dir = await getDownloadPath();
+        if (dir != null) {
+          String savename = "reporte.xlsx";
+          String savePath = dir + "/$savename";
+          print(savePath);
+          //output:  /storage/emulated/0/Download/banner.png
 
-      savePath = await getFilePath(fileName);
-      await dio.download(imageUrl, savePath, onReceiveProgress: (rec, total) {
-        setState(() {
-          downloading = true;
-          // download = (rec / total) * 100;
-          downloadingStr = "Downloading Image : $rec";
-          print(downloadingStr);
-        });
-      });
-      setState(() async {
-        downloading = false;
-        downloadingStr = "Completed";
-        print(downloadingStr);
-        print(savePath);
-        await showDialog(
-          context: context,
-          builder: (context) => new AlertDialog(
-            title: new Text('Reporte guardado en '),
-            content: new Text(savePath),
-          ),
-        );
-      });
+          try {
+            await Dio().download(imageUrl, savePath,
+                onReceiveProgress: (received, total) {
+              if (total != -1) {
+                print((received / total * 100).toStringAsFixed(0) + "%");
+                //you can build progressbar feature too
+              }
+            });
+            print("File is saved to download folder.");
+            await showDialog(
+              context: context,
+              builder: (context) => new AlertDialog(
+                title: new Text('Reporte guardado en '),
+                content: new Text(savePath),
+              ),
+            );
+          } on DioError catch (e) {
+            print(e.message);
+          }
+        }
+      } else {
+        print("No permission to read and write.");
+      }
     } catch (e) {
       print(e.toString());
     }
