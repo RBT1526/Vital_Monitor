@@ -111,18 +111,18 @@ String Get_time(){
 // ###############################################################################
 
 void init_radio () {
- while (!nrf24.init()){
+ if (!nrf24.init()){
     Serial.println("init failed");
     delay(5000);
  }
     
-  while (!nrf24.setChannel(1))
+if (!nrf24.setChannel(1))
   {
       Serial.println("setChannel failed");
       delay(5000);
   }
     
-  while (!nrf24.setRF(RH_NRF24::DataRate2Mbps, RH_NRF24::TransmitPower0dBm)){
+if (!nrf24.setRF(RH_NRF24::DataRate2Mbps, RH_NRF24::TransmitPower0dBm)){
       Serial.println("setRF failed");
       delay(5000); 
   }
@@ -584,11 +584,13 @@ Serial.println("---------------------third part--------------");
 long time_temp = millis();
 checked = 0;
 Serial.println("Starting wait_time");
+int countermsj = 0;
 while((millis()-time_temp)< 90000){
   Serial.print("MILLIS_TEMP = ");
   Serial.println(millis()-time_temp);
   Firebase.RTDB.readStream(&stream);
 checked = check_for_dia();
+
 switch (checked)
 {
 
@@ -600,7 +602,11 @@ case 1:
 
 case 2:
   Serial.println("The message don't have the pressure data");
+  countermsj++;
+  if(countermsj>4){
+    countermsj = 0;
   return false;
+  }
   break;
 
 }

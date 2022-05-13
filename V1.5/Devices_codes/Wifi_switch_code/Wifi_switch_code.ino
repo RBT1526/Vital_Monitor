@@ -277,7 +277,9 @@ void setup()
  digitalWrite(light, HIGH);
     delay(2000);
     digitalWrite(light, LOW);
-
+if(digitalRead(button)){
+  erase_eeprom();
+}
 check_for_connection();
 token_dir = WiFi.macAddress();
   token_dir.replace(":","");
